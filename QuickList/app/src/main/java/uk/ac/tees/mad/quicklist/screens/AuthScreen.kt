@@ -9,6 +9,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -24,7 +25,6 @@ import uk.ac.tees.mad.quicklist.R
 fun AuthScreen() {
     var selectedTab by remember { mutableStateOf("Login") }
 
-    // Gradient Background
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -55,16 +55,14 @@ fun AuthScreen() {
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
 
-                // Icon Logo (Optional)
                 Image(
-                    painter = painterResource(id = R.drawable.ic_launcher_foreground),
+                    painter = painterResource(id = R.drawable.quicklist),
                     contentDescription = null,
-                    modifier = Modifier.size(100.dp)
+                    modifier = Modifier.size(100.dp).clip(RoundedCornerShape(24.dp))
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Tabs
                 TabRow(
                     selectedTabIndex = if (selectedTab == "Login") 0 else 1,
                     containerColor = Color.Transparent,
@@ -84,7 +82,6 @@ fun AuthScreen() {
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Tab content with Crossfade animation
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
