@@ -1,5 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.QuickList" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Theme.QuickList" parent="android:Theme.Material.Light.NoActionBar">
+
+        <item name="android:windowBackground">@color/white</item>
+
+    </style>
+
+    <style name="Theme.QuickList.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/white</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/seven_icon</item>
+        <item name="postSplashScreenTheme">@style/Theme.QuickList</item>
+        <item name="windowSplashScreenAnimationDuration">400</item>
+        <item name="windowSplashScreenIconBackgroundColor">@color/white</item>
+    </style>
+
 </resources>
