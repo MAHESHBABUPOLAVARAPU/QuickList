@@ -1,5 +1,6 @@
 package uk.ac.tees.mad.safeher.presentation.ViewModel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
@@ -8,14 +9,29 @@ import com.google.firebase.auth.FirebaseAuthWeakPasswordException
 import com.google.firebase.firestore.FirebaseFirestore
 
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 
 @HiltViewModel
 class AuthViewModel @Inject constructor() : ViewModel() {
+
+    val db = FirebaseFirestore.getInstance()
     val auth: FirebaseAuth = FirebaseAuth.getInstance()
-    val firestore = FirebaseFirestore.getInstance()
+
+
+
+
+
+
+
+
+
+
+
+
     fun signUp(
         email: String,
         password: String,
@@ -40,7 +56,7 @@ class AuthViewModel @Inject constructor() : ViewModel() {
 
                             )
 
-                            firestore.collection("user").document(userId).set(userInfo)
+                            db.collection("user").document(userId).set(userInfo)
                                 .addOnSuccessListener {
                                     onResult("Signup successful", true)
                                 }.addOnFailureListener { exception ->
@@ -84,6 +100,10 @@ class AuthViewModel @Inject constructor() : ViewModel() {
             }
         }
     }
+
+
+
+
 
 
 }
