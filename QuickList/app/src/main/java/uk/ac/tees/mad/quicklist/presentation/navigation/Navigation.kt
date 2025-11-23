@@ -14,6 +14,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.google.firebase.auth.FirebaseAuth
+import uk.ac.tees.mad.quicklist.presentation.Screens.ActivityScreen
 import uk.ac.tees.mad.quicklist.presentation.Screens.AuthScreen
 import uk.ac.tees.mad.quicklist.presentation.Screens.HomeScreen
 import uk.ac.tees.mad.quicklist.presentation.Screens.LoginScreen
@@ -90,6 +91,28 @@ fun Navigation(
 
 
          HomeScreen(
+                homeViewModel = homeViewModel,
+                authViewModel = authViewModel,
+                navController = navController
+            )
+
+        }
+
+        composable<Routes.ActivityScreen> {
+
+
+            ActivityScreen(
+                homeViewModel = homeViewModel,
+                authViewModel = authViewModel,
+                navController = navController
+            )
+
+        }
+
+        composable<Routes.ProfileScreen> {
+
+
+            ActivityScreen(
                 homeViewModel = homeViewModel,
                 authViewModel = authViewModel,
                 navController = navController
