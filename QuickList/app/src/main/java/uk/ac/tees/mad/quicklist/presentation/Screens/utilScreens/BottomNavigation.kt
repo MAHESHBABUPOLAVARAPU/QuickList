@@ -10,8 +10,10 @@ import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.List
+import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -60,7 +62,7 @@ fun BottomNavigation(navController: NavHostController, modifier: Modifier = Modi
 
             NavigationBarItem(
                 modifier = Modifier.offset(y = 10.dp),
-                selected = isSelected,
+                selected = false,
                 onClick = {
                     selectedIndex = index
                     when (selectedIndex) {
@@ -79,7 +81,7 @@ fun BottomNavigation(navController: NavHostController, modifier: Modifier = Modi
                 },
                 icon = {
                     Icon(
-                        imageVector = if (isSelected) navItem.filledIcon else navItem.outlinedIcon,
+                        imageVector = navItem.outlinedIcon,
                         contentDescription = navItem.title,
                         tint = Color.Black
                     )

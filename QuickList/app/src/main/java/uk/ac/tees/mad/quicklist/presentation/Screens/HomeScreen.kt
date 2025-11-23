@@ -1,5 +1,6 @@
 package uk.ac.tees.mad.quicklist.presentation.Screens
 
+import BottomNavigation
 import android.Manifest
 import android.R.attr.description
 import android.R.id.message
@@ -102,7 +103,12 @@ fun HomeScreen(
 
     Scaffold(
         modifier = Modifier
-            .fillMaxSize(), bottomBar = {
+            .fillMaxSize(),
+        bottomBar = {
+            BottomNavigation(
+                navController = navController,
+                modifier = Modifier
+            )
 
         },
         topBar = {
@@ -122,7 +128,9 @@ fun HomeScreen(
                     .fillMaxWidth()
                     .shadow(4.dp, RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp))
             )
-        }, floatingActionButton = {
+
+        },
+        floatingActionButton = {
             FloatingActionButton(
                 onClick = {
                     showDialog = !showDialog
@@ -141,7 +149,8 @@ fun HomeScreen(
                 )
 
             }
-        }) { paddingValues ->
+        },
+    ) { paddingValues ->
 
 
         if (showDialog) {
@@ -248,7 +257,7 @@ fun TaskCard(
             onUpdate = { title, des ->
                 homeViewModel.updateTaskInFirestore(
                     taskId = task.id,
-                    title =title,
+                    title = title,
                     description = des,
                     onResult = { b, m ->
                         if (b) {

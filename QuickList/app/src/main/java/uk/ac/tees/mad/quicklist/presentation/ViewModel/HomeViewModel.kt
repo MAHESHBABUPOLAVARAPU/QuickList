@@ -2,6 +2,7 @@ package uk.ac.tees.mad.quicklist.presentation.ViewModel
 
 import android.R.attr.description
 import android.util.Log
+import android.util.Log.e
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -36,13 +37,15 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import uk.ac.tees.mad.quicklist.data.local.TaskDao
 import uk.ac.tees.mad.quicklist.data.local.TaskEntity
+import uk.ac.tees.mad.quicklist.data.remote.api.activityDto.ActivityDtoItem
+import uk.ac.tees.mad.quicklist.domain.reposiotry.BoredRepository
 import uk.ac.tees.mad.safeher.presentation.ViewModel.GetUserInfo
 import java.util.StringTokenizer
 import javax.inject.Inject
 
 
 @HiltViewModel
-class HomeViewModel @Inject constructor( private val taskDao: TaskDao) : ViewModel() {
+class HomeViewModel @Inject constructor( private val taskDao: TaskDao ,private val repository: BoredRepository) : ViewModel() {
 
     val db = FirebaseFirestore.getInstance()
     val auth: FirebaseAuth = FirebaseAuth.getInstance()
@@ -120,7 +123,20 @@ class HomeViewModel @Inject constructor( private val taskDao: TaskDao) : ViewMod
     }
 
 
+    private val _activity = MutableStateFlow< List<ActivityDtoItem>?>(null)
+    val activity: StateFlow<List<ActivityDtoItem>?> = _activity
 
+    fun loadActivityByType(type: String) {
+        viewModelScope.launch {
+            try {
+                val result = repository.getRandomActivity(type)
+                _activity.value = result
+                Log.d("BoredViewModel", "$result")
+            } catch (e: Exception) {
+                Log.e("BoredViewModel", "Error: ${e.message}")
+            }
+        }
+    }
 
     fun addTaskToFirestore(
         title: String,

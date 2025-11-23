@@ -18,6 +18,7 @@ import uk.ac.tees.mad.quicklist.presentation.Screens.ActivityScreen
 import uk.ac.tees.mad.quicklist.presentation.Screens.AuthScreen
 import uk.ac.tees.mad.quicklist.presentation.Screens.HomeScreen
 import uk.ac.tees.mad.quicklist.presentation.Screens.LoginScreen
+import uk.ac.tees.mad.quicklist.presentation.Screens.ProfileScreen
 import uk.ac.tees.mad.quicklist.presentation.Screens.SingInScreen
 
 import uk.ac.tees.mad.safeher.presentation.ViewModel.AuthViewModel
@@ -112,7 +113,7 @@ fun Navigation(
         composable<Routes.ProfileScreen> {
 
 
-            ActivityScreen(
+            ProfileScreen(
                 homeViewModel = homeViewModel,
                 authViewModel = authViewModel,
                 navController = navController
