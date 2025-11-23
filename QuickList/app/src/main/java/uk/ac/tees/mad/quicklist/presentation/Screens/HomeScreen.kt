@@ -32,6 +32,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -39,6 +40,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -48,6 +51,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ModifierLocalBeyondBoundsLayout
@@ -63,6 +67,7 @@ import androidx.core.location.LocationManagerCompat.isLocationEnabled
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import kotlinx.coroutines.NonCancellable.isCompleted
+import uk.ac.tees.mad.quicklist.data.local.TaskEntity
 import uk.ac.tees.mad.quicklist.presentation.Screens.utilScreens.EditTaskDialog
 import uk.ac.tees.mad.quicklist.presentation.ViewModel.GetTask
 import uk.ac.tees.mad.quicklist.presentation.ViewModel.HomeViewModel
@@ -70,6 +75,7 @@ import uk.ac.tees.mad.safeher.presentation.Screens.utilScreens.AddTaskDialog
 import uk.ac.tees.mad.safeher.presentation.ViewModel.AuthViewModel
 import kotlin.coroutines.coroutineContext
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     homeViewModel: HomeViewModel,
@@ -98,6 +104,24 @@ fun HomeScreen(
         modifier = Modifier
             .fillMaxSize(), bottomBar = {
 
+        },
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = "QuickList",
+                        color = Color.Black,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 22.sp
+                    )
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color(0xFF9DE1FF)
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .shadow(4.dp, RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp))
+            )
         }, floatingActionButton = {
             FloatingActionButton(
                 onClick = {
@@ -112,7 +136,8 @@ fun HomeScreen(
 
 
                     imageVector = if (showDialog) Icons.Default.Close else Icons.Default.Add,
-                    contentDescription = if (showDialog) "Close" else "Add"
+                    contentDescription = if (showDialog) "Close" else "Add",
+                    tint = Color.Black
                 )
 
             }
@@ -170,6 +195,7 @@ fun HomeScreen(
                                 onResult = { b, m ->
                                     if (b) {
                                         homeViewModel.fetchTasks()
+                                        homeViewModel.deleteTaskLocally(it.id)
                                         Toast.makeText(context, m, Toast.LENGTH_SHORT).show()
                                     } else {
                                         Toast.makeText(context, m, Toast.LENGTH_SHORT).show()
@@ -203,9 +229,9 @@ fun HomeScreen(
 
 @Composable
 fun TaskCard(
-    task: GetTask,
-    onDeleteClick: (GetTask) -> Unit,
-    onToggleComplete: (GetTask) -> Unit,
+    task: TaskEntity,
+    onDeleteClick: (TaskEntity) -> Unit,
+    onToggleComplete: (TaskEntity) -> Unit,
     homeViewModel: HomeViewModel,
 ) {
     var editTaskDialog by remember { mutableStateOf(false) }

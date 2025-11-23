@@ -26,70 +26,97 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.NonCancellable.isCompleted
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
+import uk.ac.tees.mad.quicklist.data.local.TaskDao
+import uk.ac.tees.mad.quicklist.data.local.TaskEntity
 import uk.ac.tees.mad.safeher.presentation.ViewModel.GetUserInfo
 import java.util.StringTokenizer
 import javax.inject.Inject
 
 
 @HiltViewModel
-class HomeViewModel @Inject constructor() : ViewModel() {
+class HomeViewModel @Inject constructor( private val taskDao: TaskDao) : ViewModel() {
 
     val db = FirebaseFirestore.getInstance()
     val auth: FirebaseAuth = FirebaseAuth.getInstance()
 
-    private val _currentUserData = MutableStateFlow(GetUserInfo())
-    val currentUserData: StateFlow<GetUserInfo> = _currentUserData
+    private val _getTask = MutableStateFlow<List<TaskEntity>>(emptyList())
+    val getTask: StateFlow<List<TaskEntity>> = _getTask
 
 
-    private val _getTask = MutableStateFlow<List<GetTask>>(emptyList())
-    val getTask: StateFlow<List<GetTask>> = _getTask
 
 
-    fun fetchCurrentUserData() {
-        auth.currentUser?.uid?.let { userId ->
 
-            db.collection("user").document(userId).addSnapshotListener { snapshot, e ->
+//    fun fetchCurrentUserData() {
+//        auth.currentUser?.uid?.let { userId ->
+//
+//            db.collection("user").document(userId).addSnapshotListener { snapshot, e ->
+//
+//                if (e != null) {
+//
+//                    return@addSnapshotListener
+//                }
+//
+//                if (snapshot != null && snapshot.exists()) {
+//                    val data = snapshot.toObject(GetUserInfo::class.java)
+//                    data?.let {
+//                        _currentUserData.value = it
+//                        Log.d("Firestore","$it")
+//                    }
+//                }
+//            }
+//        }
+//    }
 
-                if (e != null) {
 
-                    return@addSnapshotListener
-                }
 
-                if (snapshot != null && snapshot.exists()) {
-                    val data = snapshot.toObject(GetUserInfo::class.java)
-                    data?.let {
-                        _currentUserData.value = it
-                        Log.d("Firestore","$it")
-                    }
-                }
-            }
+    fun deleteTaskLocally(taskId: String) {
+        viewModelScope.launch {
+            taskDao.deleteTaskById(taskId)
+            _getTask.value = taskDao.getAllTasks()
         }
     }
 
-
-
-
     fun fetchTasks() {
-
         auth.currentUser?.uid?.let { userId ->
-
             db.collection(userId)
                 .get()
                 .addOnSuccessListener { snapshot ->
                     val tasks = snapshot.toObjects(GetTask::class.java)
-                    _getTask.value = tasks
+
+                    viewModelScope.launch {
+
+                        tasks.forEach { task ->
+                            taskDao.upsert(
+                                TaskEntity(
+                                    id = task.id,
+                                    title = task.title,
+                                    description = task.description,
+                                    completed = task.completed,
+                                    timestamp = task.timestamp,
+                                    userId = task.userId
+                                )
+                            )
+                        }
+
+
+                        val cachedTasks = taskDao.getAllTasks()
+                        _getTask.value = cachedTasks
+                    }
                 }
                 .addOnFailureListener { e ->
+                    viewModelScope.launch {
+                        _getTask.value = taskDao.getAllTasks()
+                    }
                 }
-
         }
-
     }
 
 
@@ -120,7 +147,7 @@ class HomeViewModel @Inject constructor() : ViewModel() {
                 taskRef.set(newTask)
                     .addOnSuccessListener {
                         onSuccess(true,"Task added successfully")
-                        Log.d("Firestore", "Task added successfully with ID: $taskId")
+
                     }
                     .addOnFailureListener { e ->
                         Log.e("Firestore", "Error adding task", e)
@@ -132,6 +159,9 @@ class HomeViewModel @Inject constructor() : ViewModel() {
             }
         }
     }
+
+
+
 
     fun deleteTaskFromFirestore(
         taskId: String,
