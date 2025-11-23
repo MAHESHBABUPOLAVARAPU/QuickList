@@ -23,15 +23,6 @@ class AuthViewModel @Inject constructor() : ViewModel() {
 
 
 
-
-
-
-
-
-
-
-
-
     fun signUp(
         email: String,
         password: String,
@@ -46,6 +37,7 @@ class AuthViewModel @Inject constructor() : ViewModel() {
                         val userId = user?.uid
 
                         if (userId != null) {
+
                             val userInfo = PostUserInfo(
                                 profileImageUrl = "",
                                 name = name,

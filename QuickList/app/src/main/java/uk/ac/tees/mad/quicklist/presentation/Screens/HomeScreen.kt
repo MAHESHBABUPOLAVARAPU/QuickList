@@ -62,6 +62,8 @@ import androidx.core.content.PermissionChecker
 import androidx.core.location.LocationManagerCompat.isLocationEnabled
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import kotlinx.coroutines.NonCancellable.isCompleted
+import uk.ac.tees.mad.quicklist.presentation.Screens.utilScreens.EditTaskDialog
 import uk.ac.tees.mad.quicklist.presentation.ViewModel.GetTask
 import uk.ac.tees.mad.quicklist.presentation.ViewModel.HomeViewModel
 import uk.ac.tees.mad.safeher.presentation.Screens.utilScreens.AddTaskDialog
@@ -75,7 +77,11 @@ fun HomeScreen(
     navController: NavHostController,
 ) {
 
+    LaunchedEffect(Unit) {
 
+        homeViewModel.fetchTasks()
+    }
+    val tasks = homeViewModel.getTask.collectAsState().value
 
     val context = LocalContext.current
     var title by remember { mutableStateOf("") }
@@ -83,23 +89,6 @@ fun HomeScreen(
     var showDialog by remember { mutableStateOf(false) }
 
 
-    LaunchedEffect(Unit) {
-
-       homeViewModel.fetchCurrentUserData()
-
-
-
-    }
-    val currentUser = homeViewModel.currentUserData.collectAsState().value
-
-    LaunchedEffect(Unit) {
-
-
-        homeViewModel.fetchTasks("RVZ1PCbae1UaAprMTZnCBGrK2kr1")
-
-
-    }
-    val tasks = homeViewModel.getTask.collectAsState().value
     val PrimaryBrush = Brush.verticalGradient(
         colors = listOf(Color(0xFF9DE1FF), Color(0xFFA6ECFF))
     )
@@ -129,6 +118,7 @@ fun HomeScreen(
             }
         }) { paddingValues ->
 
+
         if (showDialog) {
 
             AddTaskDialog(
@@ -138,13 +128,15 @@ fun HomeScreen(
 
                     homeViewModel.addTaskToFirestore(
                         title = title,
-                        description = description ,
+                        description = description,
                         isCompleted = false,
                         timestamp = System.currentTimeMillis(),
-                        userId = currentUser.uid,
-                        onSuccess = { t, m ->
-                            if (t){
-                                homeViewModel.fetchTasks(currentUser.uid)
+                        onSuccess = { b, m ->
+                            if (b) {
+                                homeViewModel.fetchTasks()
+                                Toast.makeText(context, m, Toast.LENGTH_SHORT).show()
+                            } else {
+                                Toast.makeText(context, m, Toast.LENGTH_SHORT).show()
                             }
                         }
                     )
@@ -160,20 +152,46 @@ fun HomeScreen(
             contentAlignment = Alignment.Center
         ) {
 
-            LazyColumn(modifier = Modifier
-                .fillMaxSize()) {
-                items(1){
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+            ) {
+                items(1) {
                     Spacer(modifier = Modifier.height(20.dp))
                 }
                 items(tasks) {
 
                     TaskCard(
+                        homeViewModel = homeViewModel,
                         task = it,
-                        onEditClick = {},
-                        onDeleteClick = {},
+                        onDeleteClick = {
+                            homeViewModel.deleteTaskFromFirestore(
+                                taskId = it.id,
+                                onResult = { b, m ->
+                                    if (b) {
+                                        homeViewModel.fetchTasks()
+                                        Toast.makeText(context, m, Toast.LENGTH_SHORT).show()
+                                    } else {
+                                        Toast.makeText(context, m, Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            )
+                        },
                         onToggleComplete = {
-
+                            homeViewModel.toggleTaskCompletion(
+                                taskId = it.id,
+                                currentStatus = it.completed,
+                                onResult = { b, m ->
+                                    if (b) {
+                                        homeViewModel.fetchTasks()
+                                        Toast.makeText(context, m, Toast.LENGTH_SHORT).show()
+                                    } else {
+                                        Toast.makeText(context, m, Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            )
                         }
+
                     )
                 }
             }
@@ -186,15 +204,43 @@ fun HomeScreen(
 @Composable
 fun TaskCard(
     task: GetTask,
-    onEditClick: (GetTask) -> Unit,
     onDeleteClick: (GetTask) -> Unit,
     onToggleComplete: (GetTask) -> Unit,
+    homeViewModel: HomeViewModel,
 ) {
+    var editTaskDialog by remember { mutableStateOf(false) }
+    if (editTaskDialog) {
+        val context = LocalContext.current
+
+        EditTaskDialog(
+            context = context,
+            currentTitle = task.title,
+            currentDescription = task.description,
+            onDismiss = {
+                editTaskDialog = false
+            },
+            onUpdate = { title, des ->
+                homeViewModel.updateTaskInFirestore(
+                    taskId = task.id,
+                    title =title,
+                    description = des,
+                    onResult = { b, m ->
+                        if (b) {
+                            homeViewModel.fetchTasks()
+                            Toast.makeText(context, m, Toast.LENGTH_SHORT).show()
+                        } else {
+                            Toast.makeText(context, m, Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                )
+            }
+        )
+
+    }
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 6.dp)
-            .clickable { onToggleComplete(task) },
+            .padding(horizontal = 12.dp, vertical = 6.dp),
         colors = CardDefaults.cardColors(
             containerColor = Color(0xFF9DE1FF)
         ),
@@ -209,7 +255,7 @@ fun TaskCard(
             IconButton(onClick = { onToggleComplete(task) }) {
 
                 Icon(
-                    imageVector = if (task.isCompleted) Icons.Default.CheckCircle
+                    imageVector = if (task.completed) Icons.Default.CheckCircle
                     else Icons.Default.RadioButtonUnchecked,
                     contentDescription = "Complete",
                     tint = Color.Black
@@ -237,7 +283,7 @@ fun TaskCard(
 
 
             Row {
-                IconButton(onClick = { onEditClick(task) }) {
+                IconButton(onClick = { editTaskDialog = !editTaskDialog }) {
                     Icon(
                         imageVector = Icons.Default.Edit,
                         contentDescription = "Edit Task",
