@@ -4,6 +4,11 @@ package uk.ac.tees.mad.quicklist.di
 import android.app.Application
 import android.content.Context
 import androidx.room.Room
+import com.google.firebase.Firebase
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.auth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.firestore
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -65,6 +70,14 @@ object HiltModule {
         return BoredRepositoryImpl(boredApiService)
 
     }
+
+    @Provides
+    @Singleton
+    fun provideAuth() : FirebaseAuth = Firebase.auth
+
+    @Provides
+    @Singleton
+    fun providesFirestore() : FirebaseFirestore = Firebase.firestore
 
 
 }

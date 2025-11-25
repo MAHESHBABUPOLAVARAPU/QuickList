@@ -16,12 +16,12 @@ import javax.inject.Inject
 
 
 @HiltViewModel
-class AuthViewModel @Inject constructor() : ViewModel() {
+class AuthViewModel @Inject constructor(
+    val db : FirebaseFirestore,
+    val auth : FirebaseAuth
+) : ViewModel() {
 
-    val db = FirebaseFirestore.getInstance()
-    val auth: FirebaseAuth = FirebaseAuth.getInstance()
-
-
+    val loading = MutableStateFlow(false)
 
     fun signUp(
         email: String,
@@ -30,6 +30,7 @@ class AuthViewModel @Inject constructor() : ViewModel() {
         onResult: (String, Boolean) -> Unit,
     ) {
         viewModelScope.launch {
+            loading.value = true
             try {
                 auth.createUserWithEmailAndPassword(email, password).addOnCompleteListener { task ->
                     if (task.isSuccessful) {
@@ -50,12 +51,15 @@ class AuthViewModel @Inject constructor() : ViewModel() {
 
                             db.collection("user").document(userId).set(userInfo)
                                 .addOnSuccessListener {
+                                    loading.value = false
                                     onResult("Signup successful", true)
                                 }.addOnFailureListener { exception ->
                                     auth.currentUser?.delete()
+                                    loading.value = false
                                     onResult("Failed to save user info", false)
                                 }
                         } else {
+                            loading.value = false
                             onResult("User ID not found", false)
                         }
                     } else {
@@ -64,10 +68,12 @@ class AuthViewModel @Inject constructor() : ViewModel() {
                             is FirebaseAuthWeakPasswordException -> "Password is too weak"
                             else -> task.exception?.localizedMessage ?: "Signup failed"
                         }
+                        loading.value = false
                         onResult("mine $errorMessage ", false)
                     }
                 }
             } catch (e: Exception) {
+                loading.value = false
                 onResult("Unexpected error: ${e.localizedMessage}", false)
             }
         }
@@ -77,17 +83,21 @@ class AuthViewModel @Inject constructor() : ViewModel() {
         passkey: String,
         onResult: (String, Boolean) -> Unit,
     ) {
+        loading.value = true
         viewModelScope.launch {
             try {
                 auth.signInWithEmailAndPassword(email, passkey).addOnCompleteListener { task ->
                     if (task.isSuccessful) {
+                        loading.value = false
                         onResult("Login successful", true)
                     } else {
                         val errorMessage = task.exception?.localizedMessage ?: "Login failed"
+                        loading.value = false
                         onResult(errorMessage, false)
                     }
                 }
             } catch (e: Exception) {
+                loading.value = false
                 onResult("Error: ${e.localizedMessage}", false)
             }
         }
