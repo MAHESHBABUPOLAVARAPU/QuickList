@@ -35,48 +35,26 @@ import kotlinx.coroutines.NonCancellable.isCompleted
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import uk.ac.tees.mad.quicklist.data.local.GetTask
-import uk.ac.tees.mad.quicklist.data.local.PostTask
 import uk.ac.tees.mad.quicklist.data.local.TaskDao
 import uk.ac.tees.mad.quicklist.data.local.TaskEntity
 import uk.ac.tees.mad.quicklist.data.remote.api.activityDto.ActivityDtoItem
 import uk.ac.tees.mad.quicklist.domain.reposiotry.BoredRepository
 import uk.ac.tees.mad.safeher.presentation.ViewModel.GetUserInfo
 import java.util.StringTokenizer
-import java.util.UUID
 import javax.inject.Inject
 
 
 @HiltViewModel
 class HomeViewModel @Inject constructor( private val taskDao: TaskDao ,private val repository: BoredRepository) : ViewModel() {
-    private val _addEditState = MutableStateFlow(AddEditUiState())
-    val addEditState: StateFlow<AddEditUiState> = _addEditState
-
-    fun onTitleChanged(value: String) {
-        _addEditState.value = _addEditState.value.copy(title = value)
-    }
-
-    fun onNotesChanged(value: String) {
-        _addEditState.value = _addEditState.value.copy(notes = value)
-    }
-
-    fun onPriorityChanged(value: String) {
-        _addEditState.value = _addEditState.value.copy(priority = value)
-    }
-
-    fun onDueDateChanged(value: String) {
-        _addEditState.value = _addEditState.value.copy(dueDate = value)
-    }
-
-    fun onImageCaptured(uri: String?) {
-        _addEditState.value = _addEditState.value.copy(imageUri = uri)
-    }
 
     val db = FirebaseFirestore.getInstance()
     val auth: FirebaseAuth = FirebaseAuth.getInstance()
 
     private val _getTask = MutableStateFlow<List<TaskEntity>>(emptyList())
     val getTask: StateFlow<List<TaskEntity>> = _getTask
+
+
+
 
 
 //    fun fetchCurrentUserData() {
@@ -101,6 +79,7 @@ class HomeViewModel @Inject constructor( private val taskDao: TaskDao ,private v
 //    }
 
 
+
     fun deleteTaskLocally(taskId: String) {
         viewModelScope.launch {
             taskDao.deleteTaskById(taskId)
@@ -110,25 +89,19 @@ class HomeViewModel @Inject constructor( private val taskDao: TaskDao ,private v
 
     fun fetchTasks() {
         auth.currentUser?.uid?.let { userId ->
-
             db.collection(userId)
                 .get()
                 .addOnSuccessListener { snapshot ->
-
                     val tasks = snapshot.toObjects(GetTask::class.java)
 
                     viewModelScope.launch {
-                        tasks.forEach { task ->
 
+                        tasks.forEach { task ->
                             taskDao.upsert(
                                 TaskEntity(
                                     id = task.id,
                                     title = task.title,
                                     description = task.description,
-                                    notes = task.notes,
-                                    priority = task.priority,
-                                    dueDate = task.dueDate,
-                                    imageUri = task.imageUri,
                                     completed = task.completed,
                                     timestamp = task.timestamp,
                                     userId = task.userId
@@ -136,10 +109,12 @@ class HomeViewModel @Inject constructor( private val taskDao: TaskDao ,private v
                             )
                         }
 
-                        _getTask.value = taskDao.getAllTasks()
+
+                        val cachedTasks = taskDao.getAllTasks()
+                        _getTask.value = cachedTasks
                     }
                 }
-                .addOnFailureListener {
+                .addOnFailureListener { e ->
                     viewModelScope.launch {
                         _getTask.value = taskDao.getAllTasks()
                     }
@@ -148,7 +123,7 @@ class HomeViewModel @Inject constructor( private val taskDao: TaskDao ,private v
     }
 
 
-    private val _activity = MutableStateFlow<List<ActivityDtoItem>?>(null)
+    private val _activity = MutableStateFlow< List<ActivityDtoItem>?>(null)
     val activity: StateFlow<List<ActivityDtoItem>?> = _activity
 
     fun loadActivityByType(type: String) {
@@ -166,44 +141,43 @@ class HomeViewModel @Inject constructor( private val taskDao: TaskDao ,private v
     fun addTaskToFirestore(
         title: String,
         description: String,
-        notes: String,
-        priority: String,
-        dueDate: String,
-        imageUri: String?,
         isCompleted: Boolean,
         timestamp: Long,
-        onSuccess: (Boolean, String) -> Unit
+        onSuccess :(Boolean,String) -> Unit
     ) {
         auth.currentUser?.uid?.let { userId ->
 
             try {
                 val taskRef = db.collection(userId).document()
+
                 val taskId = taskRef.id
 
                 val newTask = PostTask(
                     id = taskId,
                     title = title,
                     description = description,
-                    notes = notes,
-                    priority = priority,
-                    dueDate = dueDate,
-                    imageUri = imageUri,
                     completed = isCompleted,
                     timestamp = timestamp,
                     userId = userId
                 )
-
                 taskRef.set(newTask)
-                    .addOnSuccessListener { onSuccess(true, "Task added successfully") }
+                    .addOnSuccessListener {
+                        onSuccess(true,"Task added successfully")
+
+                    }
                     .addOnFailureListener { e ->
-                        onSuccess(false, e.message ?: "Unknown error")
+                        e("Firestore", "Error adding task", e)
                     }
 
             } catch (e: Exception) {
-                onSuccess(false, e.message ?: "Unknown exception")
+                e("Firestore", "Exception while adding task: ${e.message}")
+
             }
         }
     }
+
+
+
 
     fun deleteTaskFromFirestore(
         taskId: String,
@@ -256,82 +230,64 @@ class HomeViewModel @Inject constructor( private val taskDao: TaskDao ,private v
         taskId: String,
         title: String,
         description: String,
-        notes: String,
-        priority: String,
-        dueDate: String,
-        imageUri: String?,
         onResult: (Boolean, String) -> Unit
     ) {
         auth.currentUser?.uid?.let { userId ->
 
-            val updates = mapOf(
-                "title" to title,
-                "description" to description,
-                "notes" to notes,
-                "priority" to priority,
-                "dueDate" to dueDate,
-                "imageUri" to imageUri
-            )
+            try {
+                val taskRef = db.collection(userId).document(taskId)
 
-            db.collection(userId).document(taskId)
-                .update(updates)
-                .addOnSuccessListener { onResult(true, "Task updated") }
-                .addOnFailureListener { e ->
-                    onResult(false, e.message ?: "Failed")
-                }
-        }
-    }
-
-    fun saveItem(
-        onDone: (Boolean, String) -> Unit
-    ) {
-        val state = _addEditState.value
-        val timestamp = System.currentTimeMillis()
-
-        addTaskToFirestore(
-            title = state.title,
-            description = state.notes,   // You use notes as description
-            notes = state.notes,
-            priority = state.priority,
-            dueDate = state.dueDate,
-            imageUri = state.imageUri,
-            isCompleted = false,
-            timestamp = timestamp
-        ) { success, msg ->
-
-            if (!success) {
-                onDone(false, msg)
-                return@addTaskToFirestore
-            }
-
-            // Save locally
-            viewModelScope.launch {
-                taskDao.upsert(
-                    TaskEntity(
-                        id = UUID.randomUUID().toString(),
-                        title = state.title,
-                        description = state.notes,
-                        notes = state.notes,
-                        priority = state.priority,
-                        dueDate = state.dueDate,
-                        imageUri = state.imageUri,
-                        completed = false,
-                        timestamp = timestamp,
-                        userId = auth.currentUser?.uid ?: ""
-                    )
+                val updates = mapOf(
+                    "title" to title,
+                    "description" to description
                 )
-                _getTask.value = taskDao.getAllTasks()
-            }
 
-            onDone(true, "Saved successfully")
+                taskRef.update(updates)
+                    .addOnSuccessListener {
+                        onResult(true, "Task updated successfully")
+                        Log.d("Firestore", "Task $taskId updated successfully")
+                    }
+                    .addOnFailureListener { e ->
+                        onResult(false, "Failed to update task: ${e.message}")
+                        Log.e("Firestore", "Error updating task", e)
+                    }
+
+            } catch (e: Exception) {
+                onResult(false, "Exception while updating: ${e.message}")
+                Log.e("Firestore", "Exception while updating task: ${e.message}")
+            }
         }
     }
+
+
+
+
+
+
+
 }
 
-    data class AddEditUiState(
+
+
+
+
+
+data class PostTask(
+
+    val id: String ,
+    val title: String ,
+    val description: String ,
+    val completed: Boolean,
+    val timestamp: Long ,
+    val userId: String
+)
+
+
+data class GetTask(
+    val id: String = "",
     val title: String = "",
-    val notes: String = "",
-    val priority: String = "Normal",
-    val dueDate: String = "",
-    val imageUri: String? = null
+    val description: String = "",
+    val completed: Boolean = true,
+    val timestamp: Long = System.currentTimeMillis(),
+    val userId: String = ""
 )

@@ -9,16 +9,16 @@ import androidx.room.Query
 
 
 
+@Dao
+interface TaskDao {
 
-    @Dao
-    interface TaskDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(task: TaskEntity)
+    @Query("SELECT * FROM task_table")
+    suspend fun getAllTasks(): List<TaskEntity>
 
-        @Query("SELECT * FROM task ORDER BY timestamp DESC")
-        suspend fun getAllTasks(): List<TaskEntity>
+    @Query("DELETE FROM task_table WHERE id = :taskId")
+    suspend fun deleteTaskById(taskId: String)
 
-        @Insert(onConflict = OnConflictStrategy.REPLACE)
-        suspend fun upsert(task: TaskEntity)
 
-        @Query("DELETE FROM task WHERE id = :taskId")
-        suspend fun deleteTaskById(taskId: String)
-    }
+}
