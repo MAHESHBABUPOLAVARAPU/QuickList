@@ -15,6 +15,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.google.firebase.auth.FirebaseAuth
 import uk.ac.tees.mad.quicklist.presentation.Screens.ActivityScreen
+import uk.ac.tees.mad.quicklist.presentation.Screens.AddEditScreen
 import uk.ac.tees.mad.quicklist.presentation.Screens.AuthScreen
 import uk.ac.tees.mad.quicklist.presentation.Screens.HomeScreen
 import uk.ac.tees.mad.quicklist.presentation.Screens.LoginScreen
@@ -121,9 +122,9 @@ fun Navigation(
 
         }
 
-
-
-
+        composable<Routes.AddEditScreen> {
+            AddEditScreen()
+        }
 
     }
 

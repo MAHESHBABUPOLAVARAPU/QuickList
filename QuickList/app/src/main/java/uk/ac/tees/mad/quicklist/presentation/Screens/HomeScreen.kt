@@ -1,14 +1,7 @@
 package uk.ac.tees.mad.quicklist.presentation.Screens
 
 import BottomNavigation
-import android.Manifest
-import android.R.attr.description
-import android.R.id.message
-import android.app.Activity
 import android.widget.Toast
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -17,10 +10,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -29,8 +20,6 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -38,11 +27,9 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -53,28 +40,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ModifierLocalBeyondBoundsLayout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
-import androidx.core.content.PermissionChecker
-import androidx.core.location.LocationManagerCompat.isLocationEnabled
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
-import kotlinx.coroutines.NonCancellable.isCompleted
 import uk.ac.tees.mad.quicklist.data.local.TaskEntity
 import uk.ac.tees.mad.quicklist.presentation.Screens.utilScreens.EditTaskDialog
-import uk.ac.tees.mad.quicklist.presentation.ViewModel.GetTask
 import uk.ac.tees.mad.quicklist.presentation.ViewModel.HomeViewModel
-import uk.ac.tees.mad.safeher.presentation.Screens.utilScreens.AddTaskDialog
 import uk.ac.tees.mad.safeher.presentation.ViewModel.AuthViewModel
-import kotlin.coroutines.coroutineContext
+import uk.ac.tees.mad.safeher.presentation.navigation.Routes
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -95,10 +71,6 @@ fun HomeScreen(
     var description by remember { mutableStateOf("") }
     var showDialog by remember { mutableStateOf(false) }
 
-
-    val PrimaryBrush = Brush.verticalGradient(
-        colors = listOf(Color(0xFF9DE1FF), Color(0xFFA6ECFF))
-    )
 
 
     Scaffold(
@@ -121,9 +93,6 @@ fun HomeScreen(
                         fontSize = 22.sp
                     )
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFF9DE1FF)
-                ),
                 modifier = Modifier
                     .fillMaxWidth()
                     .shadow(4.dp, RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp))
@@ -133,7 +102,7 @@ fun HomeScreen(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
-                    showDialog = !showDialog
+                    navController.navigate(Routes.AddEditScreen)
 
                 }, modifier = Modifier.padding(end = 20.dp, bottom = 20.dp),
                 containerColor = Color(0xFF9DE1FF),
@@ -151,37 +120,9 @@ fun HomeScreen(
             }
         },
     ) { paddingValues ->
-
-
-        if (showDialog) {
-
-            AddTaskDialog(
-                context = LocalContext.current,
-                onDismiss = { showDialog = false },
-                onSave = { title, description ->
-
-                    homeViewModel.addTaskToFirestore(
-                        title = title,
-                        description = description,
-                        isCompleted = false,
-                        timestamp = System.currentTimeMillis(),
-                        onSuccess = { b, m ->
-                            if (b) {
-                                homeViewModel.fetchTasks()
-                                Toast.makeText(context, m, Toast.LENGTH_SHORT).show()
-                            } else {
-                                Toast.makeText(context, m, Toast.LENGTH_SHORT).show()
-                            }
-                        }
-                    )
-
-                }
-            )
-        }
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(brush = PrimaryBrush)
                 .padding(paddingValues),
             contentAlignment = Alignment.Center
         ) {
@@ -244,34 +185,6 @@ fun TaskCard(
     homeViewModel: HomeViewModel,
 ) {
     var editTaskDialog by remember { mutableStateOf(false) }
-    if (editTaskDialog) {
-        val context = LocalContext.current
-
-        EditTaskDialog(
-            context = context,
-            currentTitle = task.title,
-            currentDescription = task.description,
-            onDismiss = {
-                editTaskDialog = false
-            },
-            onUpdate = { title, des ->
-                homeViewModel.updateTaskInFirestore(
-                    taskId = task.id,
-                    title = title,
-                    description = des,
-                    onResult = { b, m ->
-                        if (b) {
-                            homeViewModel.fetchTasks()
-                            Toast.makeText(context, m, Toast.LENGTH_SHORT).show()
-                        } else {
-                            Toast.makeText(context, m, Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                )
-            }
-        )
-
-    }
     Card(
         modifier = Modifier
             .fillMaxWidth()
