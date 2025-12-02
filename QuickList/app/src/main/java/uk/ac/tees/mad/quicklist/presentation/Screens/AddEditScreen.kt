@@ -8,6 +8,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -21,30 +22,27 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
+import androidx.hilt.navigation.compose.hiltViewModel
 import coil3.compose.rememberAsyncImagePainter
+import uk.ac.tees.mad.quicklist.presentation.ViewModel.HomeViewModel
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddEditScreen() {
-
+fun AddEditScreen(
+    viewModel: HomeViewModel = hiltViewModel()
+) {
     val context = LocalContext.current
+    val state by viewModel.addEditState.collectAsState()
 
-    var title by remember { mutableStateOf("") }
-    var notes by remember { mutableStateOf("") }
-    var priority by remember { mutableStateOf("Normal") }
-    var dueDate by remember { mutableStateOf("") }
+    var tempUri by remember { mutableStateOf<Uri?>(null) }
 
-    val imageUri = remember { mutableStateOf<Uri?>(null) }
-
-    // ---------------------------------------------------
-    // CAMERA + FILE PROVIDER LOGIC
-    // ---------------------------------------------------
-    fun createImageUri(): Uri? {
+    fun createImageUri(): Uri {
         val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
         val file = File(context.cacheDir, "IMG_$timestamp.jpg")
+
         return FileProvider.getUriForFile(
             context,
             "${context.packageName}.provider",
@@ -52,11 +50,15 @@ fun AddEditScreen() {
         )
     }
 
+    // CAMERA LAUNCHER
     val cameraLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.TakePicture()
     ) { success ->
-        if (!success) imageUri.value = null
-        // viewModel.onImageCaptured(imageUri.value)
+        if (success && tempUri != null) {
+            viewModel.onImageCaptured(tempUri.toString())
+        } else {
+            viewModel.onImageCaptured(null)
+        }
     }
 
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -64,24 +66,21 @@ fun AddEditScreen() {
     ) { granted ->
         if (granted) {
             val uri = createImageUri()
-            imageUri.value = uri
-            cameraLauncher.launch(uri!!)
+            tempUri = uri
+            cameraLauncher.launch(uri)
         } else {
             Toast.makeText(context, "Camera permission denied", Toast.LENGTH_SHORT).show()
         }
     }
 
-    // ---------------------------------------------------
-    // UI LAYOUT
-    // ---------------------------------------------------
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         containerColor = Color(0xFFF6F9FF),
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        "Add / Edit Item",
+                    Text("Add / Edit Item",
                         fontWeight = FontWeight.Bold,
                         color = Color.Black
                     )
@@ -94,7 +93,9 @@ fun AddEditScreen() {
         floatingActionButton = {
             ExtendedFloatingActionButton(
                 onClick = {
-                    // viewModel.saveItem(...)
+                    viewModel.saveItem { success, msg ->
+                        Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                    }
                 },
                 containerColor = Color(0xFF9DE1FF),
                 contentColor = Color.Black,
@@ -104,7 +105,7 @@ fun AddEditScreen() {
         }
     ) { padding ->
 
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
@@ -112,140 +113,116 @@ fun AddEditScreen() {
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
 
-            // ---------------------------------------------------
-            // IMAGE CARD
-            // ---------------------------------------------------
-            ElevatedCard(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                elevation = CardDefaults.cardElevation(5.dp)
-            ) {
-
-                Column(
-                    modifier = Modifier
-                        .padding(18.dp)
-                        .fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally
+            item {
+                ElevatedCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White)
                 ) {
-
-                    Text(
-                        "Image",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(bottom = 12.dp)
-                    )
-
-                    Box(
-                        modifier = Modifier
-                            .size(220.dp)
-                            .background(Color(0xFFE9F4FF), RoundedCornerShape(16.dp)),
-                        contentAlignment = Alignment.Center
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(18.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        if (imageUri.value != null) {
-                            Image(
-                                painter = rememberAsyncImagePainter(imageUri.value),
-                                contentDescription = "Captured Image",
-                                modifier = Modifier.fillMaxSize()
-                            )
-                        } else {
-                            Text("No Image Selected")
+                        Text("Image", fontWeight = FontWeight.Bold)
+
+                        val finalImg = state.imageUri
+
+                        Box(
+                            modifier = Modifier
+                                .size(240.dp)
+                                .background(Color(0xFFE9F4FF), RoundedCornerShape(16.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (!finalImg.isNullOrEmpty()) {
+                                Image(
+                                    painter = rememberAsyncImagePainter(finalImg),
+                                    contentDescription = "Captured Image",
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            } else {
+                                Text("No Image Selected")
+                            }
                         }
-                    }
 
-                    Button(
-                        onClick = {
-                            permissionLauncher.launch(Manifest.permission.CAMERA)
-                        },
-                        modifier = Modifier.padding(top = 14.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF9DE1FF),
-                            contentColor = Color.Black
-                        )
-                    ) {
-                        Text("Capture Image")
+                        Button(
+                            onClick = { permissionLauncher.launch(Manifest.permission.CAMERA) },
+                            modifier = Modifier.padding(top = 14.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF9DE1FF),
+                                contentColor = Color.Black
+                            )
+                        ) { Text("Capture Image") }
                     }
                 }
             }
 
-            // ---------------------------------------------------
-            // FORM CARD
-            // ---------------------------------------------------
-            ElevatedCard(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                elevation = CardDefaults.cardElevation(5.dp)
-            ) {
-
-                Column(
-                    modifier = Modifier
-                        .padding(18.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+            item {
+                ElevatedCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White)
                 ) {
 
-                    // Title
-                    OutlinedTextField(
-                        value = title,
-                        onValueChange = {
-                            title = it
-                            // viewModel.onTitleChanged(it)
-                        },
-                        label = { Text("Title") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
+                    Column(
+                        modifier = Modifier.padding(18.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
 
-                    // Priority
-                    var expanded by remember { mutableStateOf(false) }
-                    Box {
                         OutlinedTextField(
-                            value = priority,
-                            onValueChange = {},
-                            readOnly = true,
-                            label = { Text("Priority") },
-                            trailingIcon = {
-                                IconButton(onClick = { expanded = true }) {
-                                    Icon(Icons.Default.ArrowDropDown, contentDescription = null)
-                                }
-                            },
-                            modifier = Modifier.fillMaxWidth()
+                            value = state.title,
+                            onValueChange = viewModel::onTitleChanged,
+                            label = { Text("Title") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
                         )
-                        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                            listOf("Low", "Normal", "High").forEach { p ->
-                                DropdownMenuItem(
-                                    text = { Text(p) },
-                                    onClick = {
-                                        priority = p
-                                        expanded = false
+
+                        var expanded by remember { mutableStateOf(false) }
+
+                        Box {
+                            OutlinedTextField(
+                                value = state.priority,
+                                onValueChange = {},
+                                readOnly = true,
+                                label = { Text("Priority") },
+                                trailingIcon = {
+                                    IconButton(onClick = { expanded = true }) {
+                                        Icon(Icons.Default.ArrowDropDown, contentDescription = null)
                                     }
-                                )
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+
+                            DropdownMenu(
+                                expanded = expanded,
+                                onDismissRequest = { expanded = false }
+                            ) {
+                                listOf("Low", "Normal", "High").forEach { p ->
+                                    DropdownMenuItem(
+                                        text = { Text(p) },
+                                        onClick = {
+                                            viewModel.onPriorityChanged(p)
+                                            expanded = false
+                                        }
+                                    )
+                                }
                             }
                         }
+
+                        OutlinedTextField(
+                            value = state.dueDate,
+                            onValueChange = viewModel::onDueDateChanged,
+                            label = { Text("Due Date (YYYY-MM-DD)") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        OutlinedTextField(
+                            value = state.notes,
+                            onValueChange = viewModel::onNotesChanged,
+                            label = { Text("Notes") },
+                            modifier = Modifier.fillMaxWidth(),
+                            minLines = 3
+                        )
                     }
-
-                    // Due Date
-                    OutlinedTextField(
-                        value = dueDate,
-                        onValueChange = {
-                            dueDate = it
-                            // viewModel.onDueDateChanged(it)
-                        },
-                        label = { Text("Due Date (YYYY-MM-DD)") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    // Notes
-                    OutlinedTextField(
-                        value = notes,
-                        onValueChange = {
-                            notes = it
-                            // viewModel.onNotesChanged(it)
-                        },
-                        label = { Text("Notes") },
-                        modifier = Modifier.fillMaxWidth(),
-                        minLines = 3
-                    )
                 }
             }
         }

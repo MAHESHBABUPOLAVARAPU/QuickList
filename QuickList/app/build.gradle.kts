@@ -44,6 +44,7 @@ android {
 }
 
 dependencies {
+    implementation("com.cloudinary:cloudinary-android:3.1.2")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
