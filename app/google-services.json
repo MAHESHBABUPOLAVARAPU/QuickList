@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "834921138962",
+    "project_id": "quicklist-57041",
+    "storage_bucket": "quicklist-57041.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:834921138962:android:f146f9bae46a7f67a1c1cb",
+        "android_client_info": {
+          "package_name": "uk.ac.tees.mad.quicklist"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyApnmfZCLOavRWKOCSKznFGfu41R2xsMwU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
