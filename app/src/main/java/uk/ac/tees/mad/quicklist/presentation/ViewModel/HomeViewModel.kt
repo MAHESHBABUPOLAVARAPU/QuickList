@@ -54,13 +54,13 @@ class HomeViewModel @Inject constructor(
         _addEditState.value = _addEditState.value.copy(imageUri = imagePath)
     }
 
-    val db = FirebaseFirestore.getInstance()
-    val auth: FirebaseAuth = FirebaseAuth.getInstance()
+    private val db = FirebaseFirestore.getInstance()
+    private val auth = FirebaseAuth.getInstance()
 
     private val _getTask = MutableStateFlow<List<TaskEntity>>(emptyList())
     val getTask: StateFlow<List<TaskEntity>> = _getTask
 
-    val cloudinaryConfig = Cloudinary(
+    private val cloudinary = Cloudinary(
         mapOf(
             "cloud_name" to "dzsqn6pd5",
             "api_key" to "653551969187332",
@@ -68,176 +68,75 @@ class HomeViewModel @Inject constructor(
         )
     )
 
-    fun uploadImage(
-        filePath: String,
-        onResult: (Boolean, String?) -> Unit
-    ) {
+    fun uploadImage(filePath: String, onResult: (Boolean, String?) -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val file = File(filePath)
-                if (!file.exists() || !file.canRead()) {
-                    val error = "File does not exist or not readable: $filePath"
-                    Log.e("HomeViewModel", error)
-                    withContext(Dispatchers.Main) { onResult(false, error) }
-                    return@launch
-                }
-
-                val uploader = cloudinaryConfig.uploader()
-
-                val result = uploader.upload(
+                val result = cloudinary.uploader().upload(
                     filePath,
-                    mapOf(
-                        "upload_preset" to "quicklist_unsigned",
-                        "folder" to "quicklist/tasks"
-                    )
+                    mapOf("folder" to "quicklist/tasks")
                 )
-
-                val url = result["secure_url"] as? String
-                if (url != null) {
-                    Log.d("HomeViewModel", "Upload success: $url")
-                    withContext(Dispatchers.Main) { onResult(true, url) }
-                } else {
-                    val error = "No secure URL returned"
-                    Log.e("HomeViewModel", error)
-                    withContext(Dispatchers.Main) { onResult(false, error) }
+                withContext(Dispatchers.Main) {
+                    onResult(true, result["secure_url"] as String)
                 }
             } catch (e: Exception) {
-                Log.e("HomeViewModel", "Upload failed", e)
-                withContext(Dispatchers.Main) { onResult(false, e.message) }
+                withContext(Dispatchers.Main) {
+                    onResult(false, e.message)
+                }
+            }
+        }
+    }
+
+    fun fetchTasks() {
+        auth.currentUser?.uid?.let { userId ->
+            db.collection(userId).get().addOnSuccessListener { snapshot ->
+                viewModelScope.launch(Dispatchers.IO) {
+                    snapshot.documents.forEach { doc ->
+                        val task = doc.toObject(GetTask::class.java) ?: return@forEach
+                        val dueDate = when (val v = doc.get("dueDate")) {
+                            is Long -> v
+                            is String -> v.toLongOrNull() ?: 0L
+                            else -> 0L
+                        }
+
+                        taskDao.upsert(
+                            TaskEntity(
+                                id = task.id,
+                                title = task.title,
+                                description = task.description,
+                                notes = task.notes,
+                                priority = task.priority,
+                                dueDate = dueDate,
+                                imageUri = task.imageUri,
+                                completed = task.completed,
+                                timestamp = task.timestamp,
+                                userId = task.userId
+                            )
+                        )
+                    }
+                    _getTask.value = taskDao.getAllTasks()
+                }
             }
         }
     }
 
     fun deleteTaskLocally(taskId: String) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             taskDao.deleteTaskById(taskId)
             NotificationScheduler.cancelNotification(context, taskId)
             _getTask.value = taskDao.getAllTasks()
         }
     }
 
-    fun fetchTasks() {
+    fun deleteTaskFromFirestore(taskId: String, onResult: (Boolean, String) -> Unit) {
         auth.currentUser?.uid?.let { userId ->
-            db.collection(userId)
-                .get()
-                .addOnSuccessListener { snapshot ->
-                    val tasks = snapshot.toObjects(GetTask::class.java)
-
-                    viewModelScope.launch {
-                        tasks.forEach { task ->
-                            taskDao.upsert(
-                                TaskEntity(
-                                    id = task.id,
-                                    title = task.title,
-                                    description = task.description,
-                                    notes = task.notes,
-                                    priority = task.priority,
-                                    dueDate = task.dueDate,
-                                    imageUri = task.imageUri,
-                                    completed = task.completed,
-                                    timestamp = task.timestamp,
-                                    userId = task.userId
-                                )
-                            )
-                        }
-                        _getTask.value = taskDao.getAllTasks()
-                    }
+            db.collection(userId).document(taskId).delete()
+                .addOnSuccessListener {
+                    NotificationScheduler.cancelNotification(context, taskId)
+                    onResult(true, "Task deleted")
                 }
                 .addOnFailureListener {
-                    viewModelScope.launch {
-                        _getTask.value = taskDao.getAllTasks()
-                    }
+                    onResult(false, it.message ?: "Error")
                 }
-        }
-    }
-
-    private val _activity = MutableStateFlow<List<ActivityDtoItem>?>(null)
-    val activity: StateFlow<List<ActivityDtoItem>?> = _activity
-
-    fun loadActivityByType(type: String) {
-        viewModelScope.launch {
-            try {
-                val result = repository.getRandomActivity(type)
-                _activity.value = result
-                Log.d("BoredViewModel", "$result")
-            } catch (e: Exception) {
-                Log.e("BoredViewModel", "Error: ${e.message}")
-            }
-        }
-    }
-
-    fun addTaskToFirestore(
-        title: String,
-        description: String,
-        notes: String,
-        priority: String,
-        dueDate: Long,
-        imageUri: String?,
-        isCompleted: Boolean,
-        timestamp: Long,
-        onSuccess: (Boolean, String, String?) -> Unit
-    ) {
-        auth.currentUser?.uid?.let { userId ->
-            try {
-                val taskRef = db.collection(userId).document()
-                val taskId = taskRef.id
-
-                val newTask = PostTask(
-                    id = taskId,
-                    title = title,
-                    description = description,
-                    notes = notes,
-                    priority = priority,
-                    dueDate = dueDate,
-                    imageUri = imageUri,
-                    completed = isCompleted,
-                    timestamp = timestamp,
-                    userId = userId
-                )
-
-                taskRef.set(newTask)
-                    .addOnSuccessListener {
-                        // Schedule notification using AlarmManager
-                        NotificationScheduler.scheduleNotification(
-                            context = context,
-                            taskId = taskId,
-                            taskTitle = title,
-                            taskNotes = notes,
-                            timestamp = dueDate
-                        )
-                        onSuccess(true, "Task added successfully", taskId)
-                    }
-                    .addOnFailureListener { e ->
-                        onSuccess(false, e.message ?: "Unknown error", null)
-                    }
-            } catch (e: Exception) {
-                onSuccess(false, e.message ?: "Unknown exception", null)
-            }
-        } ?: onSuccess(false, "User not authenticated", null)
-    }
-
-    fun deleteTaskFromFirestore(
-        taskId: String,
-        onResult: (Boolean, String) -> Unit
-    ) {
-        auth.currentUser?.uid?.let { userId ->
-            try {
-                val taskRef = db.collection(userId).document(taskId)
-
-                taskRef.delete()
-                    .addOnSuccessListener {
-                        NotificationScheduler.cancelNotification(context, taskId)
-                        onResult(true, "Task deleted successfully")
-                        Log.d("Firestore", "Task deleted successfully with ID: $taskId")
-                    }
-                    .addOnFailureListener { e ->
-                        onResult(false, "Failed to delete task: ${e.message}")
-                        Log.e("Firestore", "Error deleting task", e)
-                    }
-            } catch (e: Exception) {
-                onResult(false, "Exception: ${e.message}")
-                Log.e("Firestore", "Exception while deleting task: ${e.message}")
-            }
         }
     }
 
@@ -246,17 +145,11 @@ class HomeViewModel @Inject constructor(
         currentStatus: Boolean,
         onResult: (Boolean, String) -> Unit
     ) {
-        val userId = auth.currentUser?.uid ?: return onResult(false, "User not logged in")
-        val newStatus = !currentStatus
-
+        val userId = auth.currentUser?.uid ?: return
         db.collection(userId).document(taskId)
-            .update("completed", newStatus)
-            .addOnSuccessListener {
-                onResult(true, "Task marked as ${if (newStatus) "completed" else "incomplete"}")
-            }
-            .addOnFailureListener { e ->
-                onResult(false, "Failed to update task: ${e.message}")
-            }
+            .update("completed", !currentStatus)
+            .addOnSuccessListener { onResult(true, "Updated") }
+            .addOnFailureListener { onResult(false, it.message ?: "Failed") }
     }
 
     fun updateTaskInFirestore(
@@ -269,34 +162,26 @@ class HomeViewModel @Inject constructor(
         imageUri: String?,
         onResult: (Boolean, String) -> Unit
     ) {
-        auth.currentUser?.uid?.let { userId ->
-            val updates = mapOf(
-                "title" to title,
-                "description" to description,
-                "notes" to notes,
-                "priority" to priority,
-                "dueDate" to dueDate,
-                "imageUri" to imageUri
-            )
+        val userId = auth.currentUser?.uid ?: return
+        val updates = mapOf(
+            "title" to title,
+            "description" to description,
+            "notes" to notes,
+            "priority" to priority,
+            "dueDate" to dueDate,
+            "imageUri" to imageUri
+        )
 
-            db.collection(userId).document(taskId)
-                .update(updates)
-                .addOnSuccessListener {
-                    // Reschedule notification with new time
-                    NotificationScheduler.cancelNotification(context, taskId)
-                    NotificationScheduler.scheduleNotification(
-                        context = context,
-                        taskId = taskId,
-                        taskTitle = title,
-                        taskNotes = notes,
-                        timestamp = dueDate
-                    )
-                    onResult(true, "Task updated")
-                }
-                .addOnFailureListener { e ->
-                    onResult(false, e.message ?: "Failed")
-                }
-        }
+        db.collection(userId).document(taskId)
+            .update(updates)
+            .addOnSuccessListener {
+                NotificationScheduler.cancelNotification(context, taskId)
+                NotificationScheduler.scheduleNotification(context, taskId, title, notes, dueDate)
+                onResult(true, "Task updated")
+            }
+            .addOnFailureListener {
+                onResult(false, it.message ?: "Update failed")
+            }
     }
 
     fun saveItem(onDone: (Boolean, String) -> Unit) {
@@ -313,94 +198,68 @@ class HomeViewModel @Inject constructor(
             return
         }
 
-        val safeOnDone: (Boolean, String) -> Unit = { success, msg ->
-            viewModelScope.launch(Dispatchers.Main) {
-                onDone(success, msg)
-            }
-        }
+        auth.currentUser?.uid?.let { userId ->
+            val ref = db.collection(userId).document()
+            val id = ref.id
 
-        if (state.imageUri != null && state.imageUri!!.isNotEmpty()) {
-            uploadImage(state.imageUri!!) { uploadSuccess, uploadedUri ->
-                if (!uploadSuccess) {
-                    safeOnDone(false, uploadedUri ?: "Upload failed")
-                    return@uploadImage
-                }
-
-                addTaskToFirestore(
-                    title = state.title,
-                    description = state.notes,
-                    notes = state.notes,
-                    priority = state.priority,
-                    dueDate = state.dueDate,
-                    imageUri = uploadedUri,
-                    isCompleted = false,
-                    timestamp = timestamp
-                ) { firestoreSuccess, msg, taskId ->
-                    if (!firestoreSuccess) {
-                        safeOnDone(false, msg)
-                        return@addTaskToFirestore
-                    }
-
-                    viewModelScope.launch(Dispatchers.IO) {
-                        taskDao.upsert(
-                            TaskEntity(
-                                id = taskId!!,
-                                title = state.title,
-                                description = state.notes,
-                                notes = state.notes,
-                                priority = state.priority,
-                                dueDate = state.dueDate,
-                                imageUri = uploadedUri,
-                                completed = false,
-                                timestamp = timestamp,
-                                userId = auth.currentUser?.uid ?: ""
-                            )
-                        )
-                        launch(Dispatchers.Main) {
-                            _getTask.value = taskDao.getAllTasks()
-                        }
-                    }
-
-                    safeOnDone(true, "Saved successfully")
-                }
-            }
-        } else {
-            addTaskToFirestore(
+            val task = PostTask(
+                id = id,
                 title = state.title,
                 description = state.notes,
                 notes = state.notes,
                 priority = state.priority,
                 dueDate = state.dueDate,
-                imageUri = null,
-                isCompleted = false,
-                timestamp = timestamp
-            ) { firestoreSuccess, msg, taskId ->
-                if (!firestoreSuccess) {
-                    safeOnDone(false, msg)
-                    return@addTaskToFirestore
-                }
+                imageUri = state.imageUri,
+                completed = false,
+                timestamp = timestamp,
+                userId = userId
+            )
 
-                viewModelScope.launch(Dispatchers.IO) {
-                    taskDao.upsert(
-                        TaskEntity(
-                            id = taskId!!,
-                            title = state.title,
-                            description = state.notes,
-                            notes = state.notes,
-                            priority = state.priority,
-                            dueDate = state.dueDate,
-                            imageUri = null,
-                            completed = false,
-                            timestamp = timestamp,
-                            userId = auth.currentUser?.uid ?: ""
-                        )
+            ref.set(task)
+                .addOnSuccessListener {
+                    NotificationScheduler.scheduleNotification(
+                        context,
+                        id,
+                        state.title,
+                        state.notes,
+                        state.dueDate
                     )
-                    launch(Dispatchers.Main) {
+
+                    viewModelScope.launch(Dispatchers.IO) {
+                        taskDao.upsert(
+                            TaskEntity(
+                                id = id,
+                                title = state.title,
+                                description = state.notes,
+                                notes = state.notes,
+                                priority = state.priority,
+                                dueDate = state.dueDate,
+                                imageUri = state.imageUri,
+                                completed = false,
+                                timestamp = timestamp,
+                                userId = userId
+                            )
+                        )
                         _getTask.value = taskDao.getAllTasks()
                     }
-                }
 
-                safeOnDone(true, "Saved successfully")
+                    onDone(true, "Saved successfully")
+                }
+                .addOnFailureListener {
+                    onDone(false, it.message ?: "Save failed")
+                }
+        } ?: onDone(false, "User not authenticated")
+    }
+
+    private val _activity = MutableStateFlow<List<ActivityDtoItem>?>(null)
+    val activity: StateFlow<List<ActivityDtoItem>?> = _activity
+
+    fun loadActivityByType(type: String) {
+        viewModelScope.launch {
+            try {
+                _activity.value = repository.getRandomActivity(type)
+            } catch (e: Exception) {
+                Log.e("BoredViewModel", e.message ?: "")
             }
         }
     }
