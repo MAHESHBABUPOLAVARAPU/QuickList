@@ -21,14 +21,22 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+<<<<<<< HEAD
 import androidx.compose.ui.tooling.preview.Preview
+=======
+>>>>>>> e43dfc60c754b6235a780645bfa02ea7e0599c2c
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import uk.ac.tees.mad.quicklist.data.remote.api.activityDto.ActivityDtoItem
+<<<<<<< HEAD
 import uk.ac.tees.mad.quicklist.presentation.ViewModel.AuthViewModel
 import uk.ac.tees.mad.quicklist.presentation.ViewModel.HomeViewModel
+=======
+import uk.ac.tees.mad.quicklist.presentation.ViewModel.HomeViewModel
+import uk.ac.tees.mad.safeher.presentation.ViewModel.AuthViewModel
+>>>>>>> e43dfc60c754b6235a780645bfa02ea7e0599c2c
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -62,6 +70,10 @@ fun ActivityScreen(
         bottomBar = { BottomNavigation(navController = navController) }
     ) { innerPadding ->
 
+<<<<<<< HEAD
+=======
+        // THIS IS THE KEY FIX: No Box + Center alignment around LazyColumn
+>>>>>>> e43dfc60c754b6235a780645bfa02ea7e0599c2c
         when {
             activityList == null -> {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -115,6 +127,10 @@ fun ActivityCard(activity: ActivityDtoItem, onLinkClick: (String) -> Unit) {
                 modifier = Modifier.padding(bottom = 12.dp)
             )
 
+<<<<<<< HEAD
+=======
+            // Type tag
+>>>>>>> e43dfc60c754b6235a780645bfa02ea7e0599c2c
             Surface(color = Color(0xFF9DE1FF).copy(alpha = 0.15f), shape = RoundedCornerShape(12.dp)) {
                 Row(modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.Tag, contentDescription = null, tint = Color(0xFF9DE1FF), modifier = Modifier.size(16.dp))
@@ -167,6 +183,7 @@ fun DetailRow(icon: androidx.compose.ui.graphics.vector.ImageVector, label: Stri
             Text(value, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
         }
     }
+<<<<<<< HEAD
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -248,3 +265,6 @@ fun QuickListActivityExactPreview() {
         }
     }
 }
+=======
+}
+>>>>>>> e43dfc60c754b6235a780645bfa02ea7e0599c2c

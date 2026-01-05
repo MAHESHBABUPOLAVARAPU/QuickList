@@ -7,12 +7,21 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+<<<<<<< HEAD
 import androidx.compose.foundation.clickable
+=======
+>>>>>>> e43dfc60c754b6235a780645bfa02ea7e0599c2c
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+<<<<<<< HEAD
 import androidx.compose.material.icons.filled.*
+=======
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
+>>>>>>> e43dfc60c754b6235a780645bfa02ea7e0599c2c
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -39,22 +48,36 @@ fun EditTaskDialog(
 ) {
     val context = LocalContext.current
 
+<<<<<<< HEAD
     var showDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
 
+=======
+>>>>>>> e43dfc60c754b6235a780645bfa02ea7e0599c2c
     // Load task data into state on dialog open
     LaunchedEffect(Unit) {
         viewModel.onTitleChanged(task.title)
         viewModel.onNotesChanged(task.notes ?: "")
         viewModel.onPriorityChanged(task.priority ?: "Normal")
+<<<<<<< HEAD
         viewModel.onDueDateChanged(task.dueDate) // Now accepts Long
+=======
+        viewModel.onDueDateChanged(task.dueDate ?: "")
+        // For image, we'll handle separately - don't set local path, keep existing URL
+>>>>>>> e43dfc60c754b6235a780645bfa02ea7e0599c2c
     }
 
     val state by viewModel.addEditState.collectAsState()
     var tempFile by remember { mutableStateOf<File?>(null) }
+<<<<<<< HEAD
     var newImagePath by remember { mutableStateOf<String?>(null) }
 
     val currentImageUri = task.imageUri
+=======
+    var newImagePath by remember { mutableStateOf<String?>(null) } // For new local image path
+
+    val currentImageUri = task.imageUri // Existing URL
+>>>>>>> e43dfc60c754b6235a780645bfa02ea7e0599c2c
 
     fun createTempFile(): Pair<File, Uri> {
         val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
@@ -67,6 +90,10 @@ fun EditTaskDialog(
         return Pair(file, uri)
     }
 
+<<<<<<< HEAD
+=======
+    // CAMERA LAUNCHER for edit
+>>>>>>> e43dfc60c754b6235a780645bfa02ea7e0599c2c
     val cameraLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.TakePicture()
     ) { success ->
@@ -91,6 +118,7 @@ fun EditTaskDialog(
         }
     }
 
+<<<<<<< HEAD
     // Date Picker Dialog
     if (showDatePicker) {
         val datePickerState = rememberDatePickerState(
@@ -210,12 +238,21 @@ fun EditTaskDialog(
             LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 modifier = Modifier.fillMaxWidth()
+=======
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Edit Task") },
+        text = {
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+>>>>>>> e43dfc60c754b6235a780645bfa02ea7e0599c2c
             ) {
                 // Image Section
                 item {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
+<<<<<<< HEAD
                         colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5))
                     ) {
                         Column(
@@ -249,21 +286,61 @@ fun EditTaskDialog(
                                     else -> {
                                         Text("No Image", color = Color.Gray)
                                     }
+=======
+                        colors = CardDefaults.cardColors(containerColor = Color.White)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(18.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text("Image", fontWeight = FontWeight.Bold)
+
+                            Box(
+                                modifier = Modifier
+                                    .size(200.dp)
+                                    .background(Color(0xFFE9F4FF), RoundedCornerShape(16.dp)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (!newImagePath.isNullOrEmpty()) {
+                                    // Show new captured image
+                                    Image(
+                                        painter = rememberAsyncImagePainter("file://$newImagePath"),
+                                        contentDescription = "New Image",
+                                        modifier = Modifier.fillMaxSize()
+                                    )
+                                } else if (!currentImageUri.isNullOrEmpty()) {
+                                    // Show existing image
+                                    Image(
+                                        painter = rememberAsyncImagePainter(currentImageUri),
+                                        contentDescription = "Current Image",
+                                        modifier = Modifier.fillMaxSize()
+                                    )
+                                } else {
+                                    Text("No Image")
+>>>>>>> e43dfc60c754b6235a780645bfa02ea7e0599c2c
                                 }
                             }
 
                             Button(
                                 onClick = { permissionLauncher.launch(Manifest.permission.CAMERA) },
+<<<<<<< HEAD
                                 modifier = Modifier.padding(top = 12.dp),
+=======
+                                modifier = Modifier.padding(top = 8.dp),
+>>>>>>> e43dfc60c754b6235a780645bfa02ea7e0599c2c
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = Color(0xFF9DE1FF),
                                     contentColor = Color.Black
                                 )
+<<<<<<< HEAD
                             ) {
                                 Icon(Icons.Default.CameraAlt, contentDescription = null)
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text("Update Image")
                             }
+=======
+                            ) { Text("Capture New Image") }
+>>>>>>> e43dfc60c754b6235a780645bfa02ea7e0599c2c
                         }
                     }
                 }
@@ -276,18 +353,27 @@ fun EditTaskDialog(
                         colors = CardDefaults.cardColors(containerColor = Color.White)
                     ) {
                         Column(
+<<<<<<< HEAD
                             modifier = Modifier.padding(16.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp)
+=======
+                            modifier = Modifier.padding(18.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+>>>>>>> e43dfc60c754b6235a780645bfa02ea7e0599c2c
                         ) {
                             OutlinedTextField(
                                 value = state.title,
                                 onValueChange = viewModel::onTitleChanged,
                                 label = { Text("Title") },
                                 modifier = Modifier.fillMaxWidth(),
+<<<<<<< HEAD
                                 singleLine = true,
                                 leadingIcon = {
                                     Icon(Icons.Default.Title, contentDescription = null, tint = Color(0xFF2196F3))
                                 }
+=======
+                                singleLine = true
+>>>>>>> e43dfc60c754b6235a780645bfa02ea7e0599c2c
                             )
 
                             var expanded by remember { mutableStateOf(false) }
@@ -298,6 +384,7 @@ fun EditTaskDialog(
                                     onValueChange = {},
                                     readOnly = true,
                                     label = { Text("Priority") },
+<<<<<<< HEAD
                                     leadingIcon = {
                                         Icon(
                                             Icons.Default.Flag,
@@ -310,6 +397,8 @@ fun EditTaskDialog(
                                             }
                                         )
                                     },
+=======
+>>>>>>> e43dfc60c754b6235a780645bfa02ea7e0599c2c
                                     trailingIcon = {
                                         IconButton(onClick = { expanded = true }) {
                                             Icon(Icons.Default.ArrowDropDown, contentDescription = null)
@@ -324,6 +413,7 @@ fun EditTaskDialog(
                                 ) {
                                     listOf("Low", "Normal", "High").forEach { p ->
                                         DropdownMenuItem(
+<<<<<<< HEAD
                                             text = {
                                                 Row(
                                                     verticalAlignment = Alignment.CenterVertically,
@@ -342,6 +432,9 @@ fun EditTaskDialog(
                                                     Text(p)
                                                 }
                                             },
+=======
+                                            text = { Text(p) },
+>>>>>>> e43dfc60c754b6235a780645bfa02ea7e0599c2c
                                             onClick = {
                                                 viewModel.onPriorityChanged(p)
                                                 expanded = false
@@ -351,6 +444,7 @@ fun EditTaskDialog(
                                 }
                             }
 
+<<<<<<< HEAD
                             // Date and Time Picker
                             OutlinedTextField(
                                 value = if (state.dueDate != 0L) {
@@ -399,6 +493,13 @@ fun EditTaskDialog(
                                     disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
                                 ),
                                 enabled = false
+=======
+                            OutlinedTextField(
+                                value = state.dueDate,
+                                onValueChange = viewModel::onDueDateChanged,
+                                label = { Text("Due Date (YYYY-MM-DD)") },
+                                modifier = Modifier.fillMaxWidth()
+>>>>>>> e43dfc60c754b6235a780645bfa02ea7e0599c2c
                             )
 
                             OutlinedTextField(
@@ -414,6 +515,7 @@ fun EditTaskDialog(
             }
         },
         confirmButton = {
+<<<<<<< HEAD
             Button(
                 onClick = {
                     if (state.title.isEmpty()) {
@@ -426,6 +528,11 @@ fun EditTaskDialog(
                         return@Button
                     }
 
+=======
+            TextButton(
+                onClick = {
+                    val timestamp = System.currentTimeMillis() // Not used for update, but keep
+>>>>>>> e43dfc60c754b6235a780645bfa02ea7e0599c2c
                     if (newImagePath != null) {
                         // Upload new image first
                         viewModel.uploadImage(newImagePath!!) { uploadSuccess, uploadedUri ->
@@ -467,6 +574,7 @@ fun EditTaskDialog(
                             }
                         }
                     }
+<<<<<<< HEAD
                 },
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFF4CAF50),
@@ -476,6 +584,11 @@ fun EditTaskDialog(
                 Icon(Icons.Default.Check, contentDescription = null)
                 Spacer(modifier = Modifier.width(4.dp))
                 Text("Save Changes")
+=======
+                }
+            ) {
+                Text("Save")
+>>>>>>> e43dfc60c754b6235a780645bfa02ea7e0599c2c
             }
         },
         dismissButton = {

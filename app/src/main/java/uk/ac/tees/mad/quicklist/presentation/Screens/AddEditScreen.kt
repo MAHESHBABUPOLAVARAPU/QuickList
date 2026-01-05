@@ -2,19 +2,30 @@ package uk.ac.tees.mad.quicklist.presentation.Screens
 
 import android.Manifest
 import android.net.Uri
+<<<<<<< HEAD
 import android.os.Build
 import android.os.Looper
+=======
+>>>>>>> e43dfc60c754b6235a780645bfa02ea7e0599c2c
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+<<<<<<< HEAD
 import androidx.compose.foundation.clickable
+=======
+>>>>>>> e43dfc60c754b6235a780645bfa02ea7e0599c2c
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+<<<<<<< HEAD
 import androidx.compose.material.icons.filled.*
+=======
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Check
+>>>>>>> e43dfc60c754b6235a780645bfa02ea7e0599c2c
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,11 +33,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+<<<<<<< HEAD
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+=======
+import androidx.compose.ui.unit.dp
+import androidx.core.content.FileProvider
+import androidx.hilt.navigation.compose.hiltViewModel
+>>>>>>> e43dfc60c754b6235a780645bfa02ea7e0599c2c
 import coil3.compose.rememberAsyncImagePainter
 import uk.ac.tees.mad.quicklist.presentation.ViewModel.HomeViewModel
 import java.io.File
@@ -36,13 +53,18 @@ import java.util.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddEditScreen(
+<<<<<<< HEAD
     viewModel: HomeViewModel = hiltViewModel(),
     navController: NavHostController
+=======
+    viewModel: HomeViewModel = hiltViewModel()
+>>>>>>> e43dfc60c754b6235a780645bfa02ea7e0599c2c
 ) {
     val context = LocalContext.current
     val state by viewModel.addEditState.collectAsState()
 
     var tempFile by remember { mutableStateOf<File?>(null) }
+<<<<<<< HEAD
     var showDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
 
@@ -61,6 +83,8 @@ fun AddEditScreen(
             notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
     }
+=======
+>>>>>>> e43dfc60c754b6235a780645bfa02ea7e0599c2c
 
     fun createTempFile(): Pair<File, Uri> {
         val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
@@ -73,14 +97,28 @@ fun AddEditScreen(
         return Pair(file, uri)
     }
 
+<<<<<<< HEAD
+=======
+    // CAMERA LAUNCHER
+>>>>>>> e43dfc60c754b6235a780645bfa02ea7e0599c2c
     val cameraLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.TakePicture()
     ) { success ->
         if (success && tempFile != null) {
+<<<<<<< HEAD
             viewModel.onImageCaptured(tempFile!!.absolutePath)
             tempFile = null
         } else {
             viewModel.onImageCaptured(null)
+=======
+            // Pass the absolute file path (string) to ViewModel for upload
+            viewModel.onImageCaptured(tempFile!!.absolutePath)
+            // Clean up temp file reference
+            tempFile = null
+        } else {
+            viewModel.onImageCaptured(null)
+            // Delete temp file if not used
+>>>>>>> e43dfc60c754b6235a780645bfa02ea7e0599c2c
             tempFile?.delete()
             tempFile = null
         }
@@ -98,6 +136,7 @@ fun AddEditScreen(
         }
     }
 
+<<<<<<< HEAD
     // Date Picker Dialog
     if (showDatePicker) {
         val datePickerState = rememberDatePickerState(
@@ -200,14 +239,20 @@ fun AddEditScreen(
         )
     }
 
+=======
+>>>>>>> e43dfc60c754b6235a780645bfa02ea7e0599c2c
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         containerColor = Color(0xFFF6F9FF),
         topBar = {
             TopAppBar(
                 title = {
+<<<<<<< HEAD
                     Text(
                         "Add / Edit Item",
+=======
+                    Text("Add / Edit Item",
+>>>>>>> e43dfc60c754b6235a780645bfa02ea7e0599c2c
                         fontWeight = FontWeight.Bold,
                         color = Color.Black
                     )
@@ -221,6 +266,7 @@ fun AddEditScreen(
             ExtendedFloatingActionButton(
                 onClick = {
                     viewModel.saveItem { success, msg ->
+<<<<<<< HEAD
                         Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
 
                         if (success) {
@@ -228,6 +274,10 @@ fun AddEditScreen(
                                 navController.popBackStack()
                             }, 500)
                         }
+=======
+                        // Ensure Toast is on Main thread (though saveItem now handles it)
+                        Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+>>>>>>> e43dfc60c754b6235a780645bfa02ea7e0599c2c
                     }
                 },
                 containerColor = Color(0xFF9DE1FF),
@@ -253,9 +303,13 @@ fun AddEditScreen(
                     colors = CardDefaults.cardColors(containerColor = Color.White)
                 ) {
                     Column(
+<<<<<<< HEAD
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(18.dp),
+=======
+                        modifier = Modifier.fillMaxWidth().padding(18.dp),
+>>>>>>> e43dfc60c754b6235a780645bfa02ea7e0599c2c
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text("Image", fontWeight = FontWeight.Bold)
@@ -269,13 +323,22 @@ fun AddEditScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             if (!finalImg.isNullOrEmpty()) {
+<<<<<<< HEAD
+=======
+                                // For display, convert path back to URI if needed, but since it's file path, use file:// or content://
+                                // For simplicity, use the path directly with coil (it handles file paths)
+>>>>>>> e43dfc60c754b6235a780645bfa02ea7e0599c2c
                                 Image(
                                     painter = rememberAsyncImagePainter("file://$finalImg"),
                                     contentDescription = "Captured Image",
                                     modifier = Modifier.fillMaxSize()
                                 )
                             } else {
+<<<<<<< HEAD
                                 Text("No Image Selected", color = Color.Gray)
+=======
+                                Text("No Image Selected")
+>>>>>>> e43dfc60c754b6235a780645bfa02ea7e0599c2c
                             }
                         }
 
@@ -286,11 +349,15 @@ fun AddEditScreen(
                                 containerColor = Color(0xFF9DE1FF),
                                 contentColor = Color.Black
                             )
+<<<<<<< HEAD
                         ) {
                             Icon(Icons.Default.CameraAlt, contentDescription = null)
                             Spacer(modifier = Modifier.width(8.dp))
                             Text("Capture Image")
                         }
+=======
+                        ) { Text("Capture Image") }
+>>>>>>> e43dfc60c754b6235a780645bfa02ea7e0599c2c
                     }
                 }
             }
@@ -301,6 +368,10 @@ fun AddEditScreen(
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(containerColor = Color.White)
                 ) {
+<<<<<<< HEAD
+=======
+
+>>>>>>> e43dfc60c754b6235a780645bfa02ea7e0599c2c
                     Column(
                         modifier = Modifier.padding(18.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -310,12 +381,17 @@ fun AddEditScreen(
                             value = state.title,
                             onValueChange = viewModel::onTitleChanged,
                             label = { Text("Title") },
+<<<<<<< HEAD
                             placeholder = { Text("Enter task title") },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
                             leadingIcon = {
                                 Icon(Icons.Default.Title, contentDescription = null, tint = Color(0xFF2196F3))
                             }
+=======
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+>>>>>>> e43dfc60c754b6235a780645bfa02ea7e0599c2c
                         )
 
                         var expanded by remember { mutableStateOf(false) }
@@ -326,6 +402,7 @@ fun AddEditScreen(
                                 onValueChange = {},
                                 readOnly = true,
                                 label = { Text("Priority") },
+<<<<<<< HEAD
                                 leadingIcon = {
                                     Icon(
                                         Icons.Default.Flag,
@@ -338,6 +415,8 @@ fun AddEditScreen(
                                         }
                                     )
                                 },
+=======
+>>>>>>> e43dfc60c754b6235a780645bfa02ea7e0599c2c
                                 trailingIcon = {
                                     IconButton(onClick = { expanded = true }) {
                                         Icon(Icons.Default.ArrowDropDown, contentDescription = null)
@@ -352,6 +431,7 @@ fun AddEditScreen(
                             ) {
                                 listOf("Low", "Normal", "High").forEach { p ->
                                     DropdownMenuItem(
+<<<<<<< HEAD
                                         text = {
                                             Row(
                                                 verticalAlignment = Alignment.CenterVertically,
@@ -370,6 +450,9 @@ fun AddEditScreen(
                                                 Text(p)
                                             }
                                         },
+=======
+                                        text = { Text(p) },
+>>>>>>> e43dfc60c754b6235a780645bfa02ea7e0599c2c
                                         onClick = {
                                             viewModel.onPriorityChanged(p)
                                             expanded = false
@@ -379,6 +462,7 @@ fun AddEditScreen(
                             }
                         }
 
+<<<<<<< HEAD
                         // Date and Time Picker Field
                         OutlinedTextField(
                             value = if (state.dueDate != 0L) {
@@ -428,12 +512,20 @@ fun AddEditScreen(
                                 disabledPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant
                             ),
                             enabled = false
+=======
+                        OutlinedTextField(
+                            value = state.dueDate,
+                            onValueChange = viewModel::onDueDateChanged,
+                            label = { Text("Due Date (YYYY-MM-DD)") },
+                            modifier = Modifier.fillMaxWidth()
+>>>>>>> e43dfc60c754b6235a780645bfa02ea7e0599c2c
                         )
 
                         OutlinedTextField(
                             value = state.notes,
                             onValueChange = viewModel::onNotesChanged,
                             label = { Text("Notes") },
+<<<<<<< HEAD
                             placeholder = { Text("Add any additional notes...") },
                             modifier = Modifier.fillMaxWidth(),
                             minLines = 3
@@ -590,6 +682,8 @@ fun QuickListAddEditExactPreview() {
                             onValueChange = {},
                             label = { Text("Notes") },
                             placeholder = { Text("Add any additional notes...") },
+=======
+>>>>>>> e43dfc60c754b6235a780645bfa02ea7e0599c2c
                             modifier = Modifier.fillMaxWidth(),
                             minLines = 3
                         )
