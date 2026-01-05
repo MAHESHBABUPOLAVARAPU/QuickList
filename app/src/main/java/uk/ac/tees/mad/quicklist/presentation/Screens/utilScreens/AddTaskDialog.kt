@@ -1,4 +1,4 @@
-package uk.ac.tees.mad.safeher.presentation.Screens.utilScreens
+package uk.ac.tees.mad.quicklist.presentation.Screens.utilScreens
 
 import android.content.Context
 import android.widget.Toast

@@ -1,5 +1,6 @@
 package uk.ac.tees.mad.quicklist.presentation.ViewModel
 
+import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -7,6 +8,7 @@ import com.cloudinary.Cloudinary
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,15 +20,17 @@ import uk.ac.tees.mad.quicklist.data.local.TaskDao
 import uk.ac.tees.mad.quicklist.data.local.TaskEntity
 import uk.ac.tees.mad.quicklist.data.remote.api.activityDto.ActivityDtoItem
 import uk.ac.tees.mad.quicklist.domain.reposiotry.BoredRepository
+import uk.ac.tees.mad.quicklist.notification.NotificationScheduler
 import java.io.File
-import java.util.UUID
 import javax.inject.Inject
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val taskDao: TaskDao,
-    private val repository: BoredRepository
+    private val repository: BoredRepository,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
+
     private val _addEditState = MutableStateFlow(AddEditUiState())
     val addEditState: StateFlow<AddEditUiState> = _addEditState
 
@@ -42,11 +46,11 @@ class HomeViewModel @Inject constructor(
         _addEditState.value = _addEditState.value.copy(priority = value)
     }
 
-    fun onDueDateChanged(value: String) {
+    fun onDueDateChanged(value: Long) {
         _addEditState.value = _addEditState.value.copy(dueDate = value)
     }
 
-    fun onImageCaptured(imagePath: String?) {  // Now takes file path string
+    fun onImageCaptured(imagePath: String?) {
         _addEditState.value = _addEditState.value.copy(imageUri = imagePath)
     }
 
@@ -56,22 +60,20 @@ class HomeViewModel @Inject constructor(
     private val _getTask = MutableStateFlow<List<TaskEntity>>(emptyList())
     val getTask: StateFlow<List<TaskEntity>> = _getTask
 
-    // For unsigned uploads, remove api_secret to avoid issues (though not causing the error)
     val cloudinaryConfig = Cloudinary(
         mapOf(
-            "cloud_name" to "dapd8k4kg",
-            "api_key" to "613359997375846",
-             "api_secret" to "XgaflLFQ2ml4x2JWRx4pdvMAEFY"
+            "cloud_name" to "dzsqn6pd5",
+            "api_key" to "653551969187332",
+            "api_secret" to "L5E_fZo69-9wXCf0WJRYS827FYg"
         )
     )
 
     fun uploadImage(
-        filePath: String,  // Now takes file path (absolute path to temp file)
+        filePath: String,
         onResult: (Boolean, String?) -> Unit
     ) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                // Verify file exists
                 val file = File(filePath)
                 if (!file.exists() || !file.canRead()) {
                     val error = "File does not exist or not readable: $filePath"
@@ -83,7 +85,7 @@ class HomeViewModel @Inject constructor(
                 val uploader = cloudinaryConfig.uploader()
 
                 val result = uploader.upload(
-                    filePath,  // Pass absolute file path
+                    filePath,
                     mapOf(
                         "upload_preset" to "quicklist_unsigned",
                         "folder" to "quicklist/tasks"
@@ -109,6 +111,7 @@ class HomeViewModel @Inject constructor(
     fun deleteTaskLocally(taskId: String) {
         viewModelScope.launch {
             taskDao.deleteTaskById(taskId)
+            NotificationScheduler.cancelNotification(context, taskId)
             _getTask.value = taskDao.getAllTasks()
         }
     }
@@ -163,17 +166,16 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    // Updated to return taskId on success
     fun addTaskToFirestore(
         title: String,
         description: String,
         notes: String,
         priority: String,
-        dueDate: String,
+        dueDate: Long,
         imageUri: String?,
         isCompleted: Boolean,
         timestamp: Long,
-        onSuccess: (Boolean, String, String?) -> Unit  // Added taskId param
+        onSuccess: (Boolean, String, String?) -> Unit
     ) {
         auth.currentUser?.uid?.let { userId ->
             try {
@@ -195,7 +197,14 @@ class HomeViewModel @Inject constructor(
 
                 taskRef.set(newTask)
                     .addOnSuccessListener {
-                        // Firestore callbacks run on Main, but to be safe
+                        // Schedule notification using AlarmManager
+                        NotificationScheduler.scheduleNotification(
+                            context = context,
+                            taskId = taskId,
+                            taskTitle = title,
+                            taskNotes = notes,
+                            timestamp = dueDate
+                        )
                         onSuccess(true, "Task added successfully", taskId)
                     }
                     .addOnFailureListener { e ->
@@ -217,6 +226,7 @@ class HomeViewModel @Inject constructor(
 
                 taskRef.delete()
                     .addOnSuccessListener {
+                        NotificationScheduler.cancelNotification(context, taskId)
                         onResult(true, "Task deleted successfully")
                         Log.d("Firestore", "Task deleted successfully with ID: $taskId")
                     }
@@ -237,7 +247,6 @@ class HomeViewModel @Inject constructor(
         onResult: (Boolean, String) -> Unit
     ) {
         val userId = auth.currentUser?.uid ?: return onResult(false, "User not logged in")
-
         val newStatus = !currentStatus
 
         db.collection(userId).document(taskId)
@@ -256,7 +265,7 @@ class HomeViewModel @Inject constructor(
         description: String,
         notes: String,
         priority: String,
-        dueDate: String,
+        dueDate: Long,
         imageUri: String?,
         onResult: (Boolean, String) -> Unit
     ) {
@@ -272,22 +281,38 @@ class HomeViewModel @Inject constructor(
 
             db.collection(userId).document(taskId)
                 .update(updates)
-                .addOnSuccessListener { onResult(true, "Task updated") }
+                .addOnSuccessListener {
+                    // Reschedule notification with new time
+                    NotificationScheduler.cancelNotification(context, taskId)
+                    NotificationScheduler.scheduleNotification(
+                        context = context,
+                        taskId = taskId,
+                        taskTitle = title,
+                        taskNotes = notes,
+                        timestamp = dueDate
+                    )
+                    onResult(true, "Task updated")
+                }
                 .addOnFailureListener { e ->
                     onResult(false, e.message ?: "Failed")
                 }
         }
     }
 
-    // Updated saveItem: Upload image first (if present), then save to Firestore + local DB using Firestore ID
-    // All callbacks now dispatched to Main
-    fun saveItem(
-        onDone: (Boolean, String) -> Unit
-    ) {
+    fun saveItem(onDone: (Boolean, String) -> Unit) {
         val state = _addEditState.value
         val timestamp = System.currentTimeMillis()
 
-        // Ensure onDone is called on Main
+        if (state.title.isEmpty()) {
+            onDone(false, "Title is required")
+            return
+        }
+
+        if (state.dueDate == 0L) {
+            onDone(false, "Please select a date and time")
+            return
+        }
+
         val safeOnDone: (Boolean, String) -> Unit = { success, msg ->
             viewModelScope.launch(Dispatchers.Main) {
                 onDone(success, msg)
@@ -295,7 +320,6 @@ class HomeViewModel @Inject constructor(
         }
 
         if (state.imageUri != null && state.imageUri!!.isNotEmpty()) {
-            // Has image: Upload first, then save
             uploadImage(state.imageUri!!) { uploadSuccess, uploadedUri ->
                 if (!uploadSuccess) {
                     safeOnDone(false, uploadedUri ?: "Upload failed")
@@ -317,7 +341,6 @@ class HomeViewModel @Inject constructor(
                         return@addTaskToFirestore
                     }
 
-                    // Save to local DB using Firestore taskId
                     viewModelScope.launch(Dispatchers.IO) {
                         taskDao.upsert(
                             TaskEntity(
@@ -333,7 +356,6 @@ class HomeViewModel @Inject constructor(
                                 userId = auth.currentUser?.uid ?: ""
                             )
                         )
-                        // Refresh on Main
                         launch(Dispatchers.Main) {
                             _getTask.value = taskDao.getAllTasks()
                         }
@@ -343,7 +365,6 @@ class HomeViewModel @Inject constructor(
                 }
             }
         } else {
-            // No image: Save directly
             addTaskToFirestore(
                 title = state.title,
                 description = state.notes,
@@ -359,7 +380,6 @@ class HomeViewModel @Inject constructor(
                     return@addTaskToFirestore
                 }
 
-                // Save to local DB using Firestore taskId
                 viewModelScope.launch(Dispatchers.IO) {
                     taskDao.upsert(
                         TaskEntity(
@@ -375,7 +395,6 @@ class HomeViewModel @Inject constructor(
                             userId = auth.currentUser?.uid ?: ""
                         )
                     )
-                    // Refresh on Main
                     launch(Dispatchers.Main) {
                         _getTask.value = taskDao.getAllTasks()
                     }
@@ -391,6 +410,6 @@ data class AddEditUiState(
     val title: String = "",
     val notes: String = "",
     val priority: String = "Normal",
-    val dueDate: String = "",
+    val dueDate: Long = 0L,
     val imageUri: String? = null
 )

@@ -14,10 +14,10 @@ import androidx.compose.ui.Modifier
 
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import dagger.hilt.android.AndroidEntryPoint
+import uk.ac.tees.mad.quicklist.presentation.ViewModel.AuthViewModel
 import uk.ac.tees.mad.quicklist.presentation.ViewModel.HomeViewModel
 import uk.ac.tees.mad.quicklist.presentation.navigation.Navigation
 import uk.ac.tees.mad.quicklist.ui.theme.QuickListTheme
-import uk.ac.tees.mad.safeher.presentation.ViewModel.AuthViewModel
 import kotlin.getValue
 
 @AndroidEntryPoint

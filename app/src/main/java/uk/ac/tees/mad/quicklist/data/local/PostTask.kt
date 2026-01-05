@@ -6,7 +6,7 @@ data class PostTask(
     val description: String,
     val notes: String,
     val priority: String,
-    val dueDate: String,
+    val dueDate: Long,
     val imageUri: String?,
     val completed: Boolean,
     val timestamp: Long,

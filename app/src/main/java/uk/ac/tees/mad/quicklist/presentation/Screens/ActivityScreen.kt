@@ -21,13 +21,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import uk.ac.tees.mad.quicklist.data.remote.api.activityDto.ActivityDtoItem
+import uk.ac.tees.mad.quicklist.presentation.ViewModel.AuthViewModel
 import uk.ac.tees.mad.quicklist.presentation.ViewModel.HomeViewModel
-import uk.ac.tees.mad.safeher.presentation.ViewModel.AuthViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -61,7 +62,6 @@ fun ActivityScreen(
         bottomBar = { BottomNavigation(navController = navController) }
     ) { innerPadding ->
 
-        // THIS IS THE KEY FIX: No Box + Center alignment around LazyColumn
         when {
             activityList == null -> {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -115,7 +115,6 @@ fun ActivityCard(activity: ActivityDtoItem, onLinkClick: (String) -> Unit) {
                 modifier = Modifier.padding(bottom = 12.dp)
             )
 
-            // Type tag
             Surface(color = Color(0xFF9DE1FF).copy(alpha = 0.15f), shape = RoundedCornerShape(12.dp)) {
                 Row(modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.Tag, contentDescription = null, tint = Color(0xFF9DE1FF), modifier = Modifier.size(16.dp))
@@ -166,6 +165,86 @@ fun DetailRow(icon: androidx.compose.ui.graphics.vector.ImageVector, label: Stri
         Column(modifier = Modifier.weight(1f)) {
             Text(label, fontSize = 12.sp, color = Color.Gray)
             Text(value, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview(showBackground = true, name = "QuickList – Suggested Activities")
+@Composable
+fun QuickListActivityExactPreview() {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = "Suggested Activities",
+                        color = Color.Black,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 22.sp
+                    )
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF9DE1FF)),
+                modifier = Modifier.shadow(8.dp, RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp))
+            )
+        }
+    ) { innerPadding ->
+        LazyColumn(
+            contentPadding = PaddingValues(
+                start = 16.dp,
+                end = 16.dp,
+                top = innerPadding.calculateTopPadding() + 16.dp,
+                bottom = innerPadding.calculateBottomPadding() + 80.dp
+            ),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            items(3) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 12.dp)
+                ) {
+                    Column(modifier = Modifier.padding(20.dp)) {
+                        Text(
+                            text = "Learn a new programming language",
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Black,
+                            modifier = Modifier.padding(bottom = 12.dp)
+                        )
+
+                        Surface(color = Color(0xFF9DE1FF).copy(alpha = 0.15f), shape = RoundedCornerShape(12.dp)) {
+                            Row(modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.Tag, contentDescription = null, tint = Color(0xFF9DE1FF), modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("EDUCATION", fontWeight = FontWeight.SemiBold, color = Color(0xFF9DE1FF), fontSize = 12.sp)
+                            }
+                        }
+
+                        Spacer(Modifier.height(16.dp))
+
+                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            DetailRow(icon = Icons.Default.LocalOffer, label = "Price", value = "$0.00")
+                            DetailRow(icon = Icons.Default.Groups, label = "Participants", value = "1")
+                            DetailRow(icon = Icons.Default.AccessTime, label = "Duration", value = "Variable")
+                            DetailRow(icon = Icons.Default.ChildCare, label = "Kid Friendly", value = "Yes")
+                            DetailRow(icon = Icons.Default.Info, label = "Accessibility", value = "1.0")
+
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(Icons.Default.Link, contentDescription = null, tint = Color(0xFF9DE1FF), modifier = Modifier.size(20.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Learn More →", color = Color(0xFF9DE1FF), fontWeight = FontWeight.Medium)
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }

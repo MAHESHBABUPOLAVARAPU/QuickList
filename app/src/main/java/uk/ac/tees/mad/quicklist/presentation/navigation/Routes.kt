@@ -1,4 +1,4 @@
-package uk.ac.tees.mad.safeher.presentation.navigation
+package uk.ac.tees.mad.quicklist.presentation.navigation
 
 import kotlinx.serialization.Serializable
 

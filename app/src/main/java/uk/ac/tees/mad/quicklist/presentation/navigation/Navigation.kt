@@ -21,10 +21,10 @@ import uk.ac.tees.mad.quicklist.presentation.Screens.HomeScreen
 import uk.ac.tees.mad.quicklist.presentation.Screens.LoginScreen
 import uk.ac.tees.mad.quicklist.presentation.Screens.ProfileScreen
 import uk.ac.tees.mad.quicklist.presentation.Screens.SingInScreen
+import uk.ac.tees.mad.quicklist.presentation.ViewModel.AuthViewModel
 
-import uk.ac.tees.mad.safeher.presentation.ViewModel.AuthViewModel
 import uk.ac.tees.mad.quicklist.presentation.ViewModel.HomeViewModel
-import uk.ac.tees.mad.safeher.presentation.navigation.Routes
+import uk.ac.tees.mad.quicklist.presentation.navigation.Routes
 
 
 @Composable
@@ -123,7 +123,7 @@ fun Navigation(
         }
 
         composable<Routes.AddEditScreen> {
-            AddEditScreen()
+            AddEditScreen(navController= navController)
         }
 
     }

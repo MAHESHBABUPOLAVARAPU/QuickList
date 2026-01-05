@@ -6,6 +6,6 @@ import uk.ac.tees.mad.quicklist.presentation.ViewModel.AuthViewModel
 import uk.ac.tees.mad.quicklist.presentation.ViewModel.HomeViewModel
 
 @Composable
-fun LoginScreen(homeViewModel: HomeViewModel, authViewModel: AuthViewModel, navController: NavHostController) {
+fun SingInScreen(homeViewModel: HomeViewModel, authViewModel: AuthViewModel, navController: NavHostController) {
 
 }

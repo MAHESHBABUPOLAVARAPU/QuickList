@@ -1,7 +1,13 @@
 package uk.ac.tees.mad.quicklist.presentation.Screens
 
 import BottomNavigation
+import android.content.Context
+import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
 import android.widget.Toast
+import androidx.annotation.RequiresApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -44,6 +50,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -52,10 +59,11 @@ import coil3.compose.AsyncImage
 import coil3.compose.rememberAsyncImagePainter
 import uk.ac.tees.mad.quicklist.data.local.TaskEntity
 import uk.ac.tees.mad.quicklist.presentation.Screens.utilScreens.EditTaskDialog
+import uk.ac.tees.mad.quicklist.presentation.ViewModel.AuthViewModel
 import uk.ac.tees.mad.quicklist.presentation.ViewModel.HomeViewModel
-import uk.ac.tees.mad.safeher.presentation.ViewModel.AuthViewModel
-import uk.ac.tees.mad.safeher.presentation.navigation.Routes
+import uk.ac.tees.mad.quicklist.presentation.navigation.Routes
 
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
@@ -134,6 +142,8 @@ fun HomeScreen(
                                         homeViewModel.fetchTasks()
                                         homeViewModel.deleteTaskLocally(selectedTask.id)
                                         Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                                        val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+                                        vibrator.vibrate(VibrationEffect.createOneShot(100, VibrationEffect.DEFAULT_AMPLITUDE))
                                     } else {
                                         Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                                     }
@@ -148,6 +158,8 @@ fun HomeScreen(
                                     if (success) {
                                         homeViewModel.fetchTasks()
                                         Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                                        val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+                                        vibrator.vibrate(VibrationEffect.createOneShot(100, VibrationEffect.DEFAULT_AMPLITUDE))
                                     } else {
                                         Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                                     }
@@ -241,7 +253,6 @@ fun TaskCard(
                 }
             }
 
-            // Display image if available
             if (!task.imageUri.isNullOrEmpty()) {
                 AsyncImage(
                     model = task.imageUri,
@@ -252,14 +263,13 @@ fun TaskCard(
                         .padding(top = 8.dp)
                         .clip(RoundedCornerShape(8.dp)),
                     contentScale = ContentScale.Crop,
-                    placeholder = null, // Optional: Add placeholder
-                    error = null // Optional: Add error image
+                    placeholder = null,
+                    error = null
                 )
             }
         }
     }
 
-    // Edit dialog (assumes EditTaskDialog handles update and calls fetchTasks internally or via callback)
     if (editTaskDialog) {
         EditTaskDialog(
             task = task,
@@ -267,5 +277,114 @@ fun TaskCard(
                 editTaskDialog = false
             }
         )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview(showBackground = true, name = "QuickList – Home Screen")
+@Composable
+fun QuickListHomeExactPreview() {
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = "QuickList",
+                        color = Color.Black,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 22.sp
+                    )
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .shadow(4.dp, RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp))
+            )
+        },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = {},
+                modifier = Modifier.padding(end = 20.dp, bottom = 20.dp),
+                containerColor = Color(0xFF9DE1FF),
+                contentColor = Color.Black
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Add"
+                )
+            }
+        }
+    ) { paddingValues ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            item { Spacer(Modifier.height(20.dp)) }
+
+            items(3) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF9DE1FF)),
+                    shape = RoundedCornerShape(16.dp),
+                    elevation = CardDefaults.cardElevation(6.dp)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(onClick = {}) {
+                                Icon(
+                                    imageVector = Icons.Default.RadioButtonUnchecked,
+                                    contentDescription = "Complete"
+                                )
+                            }
+
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Buy groceries",
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.Black
+                                )
+                                Text(
+                                    text = "Milk, eggs, bread, fruits",
+                                    fontSize = 14.sp,
+                                    color = Color.Black.copy(alpha = 0.8f)
+                                )
+                                Text(
+                                    text = "Remember to check for offers!",
+                                    fontSize = 12.sp,
+                                    color = Color.Black.copy(alpha = 0.6f),
+                                    modifier = Modifier.padding(top = 4.dp)
+                                )
+                            }
+
+                            Row {
+                                IconButton(onClick = {}) {
+                                    Icon(Icons.Default.Edit, contentDescription = "Edit Task")
+                                }
+                                IconButton(onClick = {}) {
+                                    Icon(Icons.Default.Delete, contentDescription = "Delete Task")
+                                }
+                            }
+                        }
+
+                        Spacer(Modifier.height(12.dp))
+
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(150.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(Color(0xFFE3F2FD)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("GROCERIES IMAGE", color = Color(0xFF1976D2))
+                        }
+                    }
+                }
+            }
+        }
     }
 }

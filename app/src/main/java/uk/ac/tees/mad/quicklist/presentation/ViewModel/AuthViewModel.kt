@@ -1,5 +1,6 @@
-package uk.ac.tees.mad.safeher.presentation.ViewModel
+package uk.ac.tees.mad.quicklist.presentation.ViewModel
 
+import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -7,21 +8,53 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.auth.FirebaseAuthWeakPasswordException
 import com.google.firebase.firestore.FirebaseFirestore
-
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
-    val db : FirebaseFirestore,
-    val auth : FirebaseAuth
+    val db: FirebaseFirestore,
+    val auth: FirebaseAuth
 ) : ViewModel() {
 
     val loading = MutableStateFlow(false)
+
+    private val _currentUser = MutableStateFlow<GetUserInfo?>(null)
+    val currentUser: StateFlow<GetUserInfo?> = _currentUser
+
+    init {
+        auth.addAuthStateListener { firebaseAuth ->
+            firebaseAuth.currentUser?.uid?.let {
+                fetchCurrentUserData()
+            } ?: run {
+                _currentUser.value = null
+            }
+        }
+    }
+
+
+    private fun fetchCurrentUserData() {
+        auth.currentUser?.uid?.let { userId ->
+            db.collection("user").document(userId)
+                .addSnapshotListener { snapshot, e ->
+                    if (e != null) {
+                        Log.e("AuthViewModel", "Error fetching user data", e)
+                        return@addSnapshotListener
+                    }
+                    if (snapshot != null && snapshot.exists()) {
+                        val data = snapshot.toObject(GetUserInfo::class.java)
+                        _currentUser.value = data
+                    } else {
+                        _currentUser.value = null
+                    }
+                }
+        }
+    }
 
     fun signUp(
         email: String,
@@ -38,7 +71,6 @@ class AuthViewModel @Inject constructor(
                         val userId = user?.uid
 
                         if (userId != null) {
-
                             val userInfo = PostUserInfo(
                                 profileImageUrl = "",
                                 name = name,
@@ -46,7 +78,6 @@ class AuthViewModel @Inject constructor(
                                 uid = userId,
                                 passkey = password,
                                 mobNumber = ""
-
                             )
 
                             db.collection("user").document(userId).set(userInfo)
@@ -78,6 +109,7 @@ class AuthViewModel @Inject constructor(
             }
         }
     }
+
     fun logIn(
         email: String,
         passkey: String,
@@ -103,11 +135,52 @@ class AuthViewModel @Inject constructor(
         }
     }
 
+    fun updateUserInfo(
+        name: String? = null,
+        mobNumber: String? = null,
+        onResult: (String, Boolean) -> Unit
+    ) {
+        viewModelScope.launch {
+            loading.value = true
+            try {
+                val userId = auth.currentUser?.uid ?: run {
+                    loading.value = false
+                    onResult("User not authenticated", false)
+                    return@launch
+                }
 
+                val updates = mutableMapOf<String, Any>()
+                name?.let { updates["name"] = it }
+                mobNumber?.let { updates["mobNumber"] = it }
 
+                db.collection("user").document(userId).update(updates)
+                    .addOnSuccessListener {
+                        loading.value = false
+                        fetchCurrentUserData()
+                        onResult("Profile updated successfully", true)
+                    }
+                    .addOnFailureListener { e ->
+                        loading.value = false
+                        onResult("Failed to update profile: ${e.localizedMessage}", false)
+                    }
+            } catch (e: Exception) {
+                loading.value = false
+                onResult("Unexpected error: ${e.localizedMessage}", false)
+            }
+        }
+    }
 
-
-
+    fun logOut(onResult: (String, Boolean) -> Unit) {
+        viewModelScope.launch {
+            try {
+                auth.signOut()
+                _currentUser.value = null
+                onResult("Logged out successfully", true)
+            } catch (e: Exception) {
+                onResult("Logout failed: ${e.localizedMessage}", false)
+            }
+        }
+    }
 }
 
 data class PostUserInfo(
@@ -117,7 +190,6 @@ data class PostUserInfo(
     val uid: String,
     val mobNumber: String,
     val passkey: String,
-
 )
 
 data class GetUserInfo(
@@ -127,5 +199,4 @@ data class GetUserInfo(
     val uid: String = "",
     val mobNumber: String = "",
     val passkey: String = "",
-
 )

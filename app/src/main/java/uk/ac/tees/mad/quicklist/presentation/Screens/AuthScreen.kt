@@ -52,18 +52,19 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import kotlinx.coroutines.delay
 import uk.ac.tees.mad.quicklist.R
+import uk.ac.tees.mad.quicklist.presentation.ViewModel.AuthViewModel
 import uk.ac.tees.mad.quicklist.presentation.ViewModel.HomeViewModel
-import uk.ac.tees.mad.safeher.presentation.ViewModel.AuthViewModel
-import uk.ac.tees.mad.safeher.presentation.navigation.Routes
+import uk.ac.tees.mad.quicklist.presentation.navigation.Routes
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AuthScreen(homeViewModel: HomeViewModel,authViewModel: AuthViewModel,navController: NavHostController) {
+fun AuthScreen(homeViewModel: HomeViewModel, authViewModel: AuthViewModel, navController: NavHostController) {
     var selectedTab by rememberSaveable { mutableStateOf("Login") }
     val textColor = Color(0xFF000000)
     val bgColor = Color(0xFF7AE1FF)
@@ -436,3 +437,107 @@ fun LoginForm(authViewModel: AuthViewModel,navController: NavHostController) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview(showBackground = true, name = "QuickList – Auth Screen")
+@Composable
+fun QuickListAuthExactPreview() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = listOf(Color(0xFF9DE1FF), Color(0xFFA6ECFF))
+                )
+            )
+    ) {
+        Scaffold(
+            containerColor = Color.Transparent,
+            topBar = {
+                TopAppBar(
+                    title = { Text("QuickList", fontWeight = FontWeight.Bold) },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
+                )
+            }
+        ) { paddingValues ->
+            Column(
+                modifier = Modifier
+                    .padding(paddingValues)
+                    .fillMaxSize()
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.seven_icon),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(100.dp)
+                        .clip(RoundedCornerShape(24.dp))
+                )
+
+                Spacer(Modifier.height(24.dp))
+
+                TabRow(
+                    selectedTabIndex = 0,
+                    containerColor = Color.Transparent
+                ) {
+                    Tab(selected = true, onClick = {}, text = { Text("Login", color = Color.Black) })
+                    Tab(selected = false, onClick = {}, text = { Text("Register", color = Color.Black) })
+                }
+
+                Spacer(Modifier.height(24.dp))
+
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .shadow(8.dp, RoundedCornerShape(16.dp)),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF7AE1FF))
+                ) {
+                    Column(modifier = Modifier.padding(24.dp)) {
+                        Text("Welcome Back!", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+
+                        Spacer(Modifier.height(16.dp))
+
+                        OutlinedTextField(
+                            value = "user@example.com",
+                            onValueChange = {},
+                            placeholder = { Text("Email") },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(14.dp)
+                        )
+
+                        Spacer(Modifier.height(24.dp))
+
+                        OutlinedTextField(
+                            value = "••••••••",
+                            onValueChange = {},
+                            placeholder = { Text("Password") },
+                            visualTransformation = PasswordVisualTransformation(),
+                            trailingIcon = {
+                                IconButton(onClick = {}) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.outline_visibility_off_24),
+                                        contentDescription = null
+                                    )
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(14.dp)
+                        )
+
+                        Spacer(Modifier.height(24.dp))
+
+                        OutlinedButton(
+                            onClick = {},
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            border = BorderStroke(1.dp, Color.Black)
+                        ) {
+                            Text("Log in", color = Color.Black)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

@@ -26,7 +26,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
-import uk.ac.tees.mad.safeher.presentation.navigation.Routes
+import uk.ac.tees.mad.quicklist.presentation.navigation.Routes
 
 @Composable
 fun BottomNavigation(navController: NavHostController, modifier: Modifier = Modifier) {
